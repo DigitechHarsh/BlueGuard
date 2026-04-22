@@ -1,0 +1,21 @@
+You are a cybersecurity analyst. Analyze the following Nessus vulnerability finding:
+
+Severity: Critical
+Plugin ID: 298055
+CVE: CVE-2026-33032
+Vulnerability: Nginx-Ui (CVE-2026-33032)
+
+Provide a detailed assessment covering:
+
+Real-world exploitability (beyond CVSS score; consider practical attack feasibility)
+Possible attack paths within the given environment
+Potential business impact if exploited
+Likelihood of false positives
+Recommended remediation priority (with justification)
+
+Additionally, consider the following existing security controls in your analysis:
+
+Servers are not exposed to the internet and are accessible only within the internal network (no external SSH access, even with valid credentials).
+A perimeter Palo Alto Networks firewall is in place with Threat Prevention and Anti-Spyware profiles enabled.
+Wazuh agents are deployed on all servers for real-time log monitoring, including command execution tracking and alerting on suspicious activities.
+End users do not have administrative/root privileges, and data exfiltration outside the internal network is restricted.

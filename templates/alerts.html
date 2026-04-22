@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Raw Alert Stream</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body { background-color: #0f172a; color: #a1a1aa; font-family: monospace; }
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: #0f172a; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+    </style>
+</head>
+<body class="p-4 flex flex-col h-screen">
+    
+    <div class="flex justify-between items-center mb-4 border-b border-slate-700 pb-2">
+        <h2 class="text-emerald-400 font-bold"><span class="animate-pulse">🔴</span> LIVE RAW ALERTS</h2>
+        
+        <form action="/alerts" method="GET" class="flex items-center mx-4 flex-grow max-w-lg bg-slate-900 border border-slate-700 rounded overflow-hidden">
+            <span class="px-2 text-slate-400 text-xs font-bold uppercase whitespace-nowrap"><i class="fa-solid fa-filter mr-1"></i></span>
+            <select name="agent" onchange="this.form.submit()" class="bg-slate-800 text-slate-300 text-xs w-full focus:outline-none p-1 border-r border-slate-600">
+                <option value="All" {% if current_filter == 'All' %}selected{% endif %}>All Agents</option>
+                {% for a in available_agents %}
+                <option value="{{ a }}" {% if current_filter == a %}selected{% endif %}>{{ a }}</option>
+                {% endfor %}
+            </select>
+            <input type="datetime-local" name="start_time" value="{{ current_start }}" onchange="this.form.submit()" class="bg-slate-800 text-slate-300 text-xs p-1 focus:outline-none cursor-pointer border-r border-slate-600" title="Start Time">
+            <input type="datetime-local" name="end_time" value="{{ current_end }}" onchange="this.form.submit()" class="bg-slate-800 text-slate-300 text-xs p-1 focus:outline-none cursor-pointer" title="End Time">
+        </form>
+
+        <div class="flex items-center space-x-3">
+            <span class="text-xs text-slate-500">Auto-refreshing 5s</span>
+            <a href="/" class="text-xs text-blue-400 hover:text-white transition">[Back to Dashboard]</a>
+        </div>
+    </div>
+
+    <div class="overflow-y-auto flex-grow space-y-2 pr-2">
+        {% for alert in alerts %}
+            <div class="bg-slate-900 p-3 rounded border border-slate-800 hover:border-slate-600 transition flex justify-between items-center group">
+                <div class="flex-grow">
+                    <div class="flex justify-between text-xs mb-1">
+                        <span class="text-blue-400">{{ alert.get('timestamp', 'N/A')[:19] | replace("T", " ") }}</span>
+                        
+                        {% if alert.get('severity') == 'Critical' %}
+                            <span class="text-red-500 font-bold">[CRITICAL]</span>
+                        {% elif alert.get('severity') == 'High' %}
+                            <span class="text-orange-500 font-bold">[HIGH]</span>
+                        {% elif alert.get('severity') == 'Medium' %}
+                            <span class="text-yellow-500 font-bold">[MEDIUM]</span>
+                        {% else %}
+                            <span class="text-emerald-500 font-bold">[LOW]</span>
+                        {% endif %}
+                    </div>
+                    
+                    <div class="text-white text-sm">
+                        Host: <span class="text-purple-400">{{ alert.get('agent', {}).get('name', 'Unknown') }}</span> | 
+                        Type: <span class="text-pink-400">{{ alert.get('attack_type', 'Unknown') }}</span>
+                    </div>
+                    
+                    <div class="text-xs text-slate-500 mt-1 truncate">
+                        CMD: {{ alert.get('rule', {}).get('description', 'N/A') }}
+                    </div>
+                </div>
+
+                <!-- Escalate Button ONLY for Tier 1 -->
+                {% if session.get('role') == 'Tier 1 Analyst' %}
+                <div class="ml-4 opacity-0 group-hover:opacity-100 transition">
+                    <button onclick="openEscalateModal('{{ alert._id }}', '{{ alert.severity }}')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold px-3 py-1 rounded shadow-lg">
+                        <i class="fa-solid fa-paper-plane mr-1"></i> ESCALATE
+                    </button>
+                </div>
+                {% endif %}
+            </div>
+        {% else %}
+            <div class="text-center text-slate-600 mt-10">
+                Listening for incoming post requests...
+            </div>
+        {% endfor %}
+    </div    <!-- ESCALATION MODAL -->
+    <div id="escalateModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
+        <div class="bg-slate-900 border border-slate-700 p-6 rounded-xl shadow-2xl w-full max-w-lg">
+            <div class="flex justify-between items-center mb-6">
+                <h3 class="text-xl font-bold text-white"><i class="fa-solid fa-file-signature text-emerald-500 mr-2"></i>New Incident Report</h3>
+                <button onclick="closeEscalateModal()" class="text-slate-500 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
+            </div>
+            
+            <form action="/tickets" method="POST" class="space-y-4">
+                <input type="hidden" name="alert_id" id="modalAlertId">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-slate-400 text-xs font-bold mb-1 uppercase tracking-wider">Target Responder</label>
+                        <select name="receiver" id="tier2Select" class="w-full bg-slate-800 border border-slate-700 text-white p-2 rounded focus:outline-none focus:border-emerald-500 text-sm" required>
+                            <option value="">Loading analysts...</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-slate-400 text-xs font-bold mb-1 uppercase tracking-wider">Priority Level</label>
+                        <select name="priority" id="modalPriority" class="w-full bg-slate-800 border border-slate-700 text-white p-2 rounded focus:outline-none focus:border-emerald-500 text-sm">
+                            <option value="Low">Low</option>
+                            <option value="Medium">Medium</option>
+                            <option value="High">High</option>
+                            <option value="Critical">Critical</option>
+                        </select>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-slate-400 text-xs font-bold mb-1 uppercase tracking-wider">Report Subject</label>
+                    <input type="text" name="subject" id="modalSubject" placeholder="e.g. Brute Force Attempt on Web Server" class="w-full bg-slate-800 border border-slate-700 text-white p-2 rounded focus:outline-none focus:border-emerald-500 text-sm" required minlength="5" maxlength="100">
+                </div>
+
+                <div>
+                    <label class="block text-slate-400 text-xs font-bold mb-1 uppercase tracking-wider">Analyst Observations</label>
+                    <textarea name="observations" rows="4" placeholder="Describe the suspicious activity and why it requires Tier 2 investigation..." class="w-full bg-slate-800 border border-slate-700 text-white p-2 rounded focus:outline-none focus:border-emerald-500 text-sm" required minlength="10" maxlength="1000"></textarea>
+                </div>
+
+                <div class="flex space-x-3 pt-2">
+                    <button type="button" onclick="closeEscalateModal()" class="flex-grow bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold py-3 rounded tracking-widest transition">CANCEL</button>
+                    <button type="submit" class="flex-grow bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-3 rounded tracking-widest transition shadow-lg shadow-emerald-500/20">SUBMIT INCIDENT REPORT</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script>
+        let refreshEnabled = true;
+
+        function openEscalateModal(alertId, severity) {
+            refreshEnabled = false;
+            document.getElementById('modalAlertId').value = alertId;
+            document.getElementById('modalPriority').value = severity || 'Medium';
+            document.getElementById('modalSubject').value = "Incident Analysis: " + severity + " Alert";
+            document.getElementById('escalateModal').classList.remove('hidden');
+            
+            fetch('/get_tier2_users')
+                .then(res => res.json())
+                .then(users => {
+                    const select = document.getElementById('tier2Select');
+                    select.innerHTML = '<option value="">-- Choose Tier 2 Analyst --</option>';
+                    users.forEach(u => {
+                        const opt = document.createElement('option');
+                        opt.value = u;
+                        opt.textContent = u;
+                        select.appendChild(opt);
+                    });
+                });
+        }
+
+        function closeEscalateModal() {
+            document.getElementById('escalateModal').classList.add('hidden');
+            refreshEnabled = true;
+        }
+
+        setTimeout(function() { 
+            if(refreshEnabled) location.reload(); 
+        }, 5000);
+    </script>
+</body>
+</html>
+l>

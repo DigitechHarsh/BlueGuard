@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BlueGuard | Agent Management</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        body { background-color: #0f172a; color: #e2e8f0; font-family: 'Inter', sans-serif;}
+        .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
+    </style>
+</head>
+
+<body class="min-h-screen flex flex-col font-sans">
+
+    <!-- Navbar -->
+    <nav class="glass-panel border-b border-slate-700 p-4 sticky top-0 z-50">
+        <div class="container mx-auto flex justify-between items-center">
+            <div class="flex items-center space-x-3">
+                <i class="fa-solid fa-shield-halved text-blue-500 text-3xl"></i>
+                <h1 class="text-2xl font-bold tracking-wider text-white">BLUE<span class="text-blue-500">GUARD</span>
+                    <span class="text-sm text-slate-400 font-normal">AI SOC PLATFORM</span></h1>
+            </div>
+            <div class="space-x-6 text-sm font-medium flex items-center">
+                <a href="/" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-chart-line mr-2"></i>Dashboard</a>
+                <a href="/logs" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-server mr-2"></i>AI Analysis</a>
+                <a href="/alerts" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-list mr-2"></i>Raw Stream</a>
+                <a href="/agents" class="text-blue-400 border-b-2 border-blue-500 pb-1 hover:text-white transition"><i class="fa-solid fa-network-wired mr-2"></i>Agents</a>
+                
+                {% if session.get('user') %}
+                <span class="ml-4 border-l border-slate-700 pl-4 text-emerald-400"><i class="fa-solid fa-user-check mr-1"></i> {{ session.get('user') }}</span>
+                <a href="/logout" class="text-red-400 hover:text-red-300 ml-4"><i class="fa-solid fa-power-off"></i> Logout</a>
+                {% endif %}
+            </div>
+        </div>
+    </nav>
+
+    <div class="container mx-auto mt-8 px-4 flex-grow mb-12">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <!-- Left: Add Agent Form -->
+            <div class="lg:col-span-1">
+                <div class="glass-panel p-6 rounded-xl border-t-4 border-blue-500">
+                    <h2 class="text-xl font-bold mb-2 flex items-center"><i class="fa-solid fa-plus-circle text-blue-500 mr-2"></i> Register Endpoint</h2>
+                    <p class="text-slate-400 text-sm mb-6">Deploy a new Wazuh agent by generating a deployment instruction script.</p>
+
+                    <form action="/agents" method="POST" class="space-y-4">
+                        <div>
+                            <input type="text" name="hostname" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white text-sm" placeholder="e.g. WinClient" required minlength="3" maxlength="30" pattern="^[a-zA-Z0-9\-\.]+$" title="Hostname must be 3-30 characters and contain only letters, numbers, hyphens, or dots">
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 text-xs font-semibold mb-1">Operating System</label>
+                            <select name="os" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white text-sm">
+                                <option value="Windows">Windows</option>
+                                <option value="Ubuntu">Ubuntu/Debian</option>
+                                <option value="CentOS">RHEL/CentOS</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-slate-400 text-xs font-semibold mb-1">IP Address</label>
+                            <input type="text" name="ip_address" class="w-full bg-slate-900 border border-slate-700 rounded p-2 text-white text-sm" placeholder="192.168.1.50" required pattern="^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$" title="Please enter a valid IPv4 address">
+                        </div>
+                        <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-2 rounded text-sm transition">Generate Agent Token</button>
+                    </form>
+                </div>
+            </div>
+
+            <!-- Right: Agent List -->
+            <div class="lg:col-span-2">
+                <div class="glass-panel p-6 rounded-xl">
+                    <h2 class="text-xl font-bold mb-6 flex items-center"><i class="fa-solid fa-desktop text-slate-400 mr-2"></i> Monitored Endpoints</h2>
+                    
+                    {% if not agents %}
+                    <div class="text-center p-10 border border-dashed border-slate-700 rounded bg-slate-800/50">
+                        <i class="fa-solid fa-satellite-dish text-4xl text-slate-500 mb-3"></i>
+                        <h3 class="text-lg font-semibold text-slate-300">No Agents Registered</h3>
+                        <p class="text-sm text-slate-500 mt-1">Register an endpoint on the left to generate its deployment command.</p>
+                    </div>
+                    {% else %}
+                    <div class="space-y-4">
+                        {% for agent in agents %}
+                        <div class="bg-slate-800 border border-slate-700 rounded-lg p-5 hover:border-slate-500 transition">
+                            <div class="flex justify-between items-start mb-4">
+                                <div>
+                                    <h3 class="font-bold text-lg text-white flex items-center">
+                                        {% if agent.os == 'Windows' %}<i class="fa-brands fa-windows text-blue-400 mr-2"></i>
+                                        {% elif agent.os == 'Ubuntu' %}<i class="fa-brands fa-ubuntu text-orange-400 mr-2"></i>
+                                        {% else %}<i class="fa-brands fa-redhat text-red-500 mr-2"></i>{% endif %}
+                                        {{ agent.hostname }}
+                                    </h3>
+                                    <p class="text-xs text-slate-400 mt-1"><i class="fa-solid fa-network-wired mr-1"></i>{{ agent.ip_address }} &bull; Registered: {{ agent.registered_at }}</p>
+                                </div>
+                                <span class="bg-emerald-500/20 text-emerald-400 border border-emerald-500/30 px-3 py-1 rounded text-xs font-bold">Active</span>
+                            </div>
+                            
+                            <div class="bg-slate-900 rounded p-3 font-mono text-xs text-green-400 overflow-x-auto border border-slate-700">
+                                {% if agent.os == 'Windows' %}
+                                Invoke-WebRequest -Uri https://packages.wazuh.com/4.x/windows/wazuh-agent.msi -OutFile wazuh-agent.msi; msiexec.exe /i wazuh-agent.msi /q WAZUH_MANAGER="192.168.1.X" WAZUH_REGISTRATION_SERVER="192.168.1.X"
+                                {% else %}
+                                curl -s https://packages.wazuh.com/key/GPG-KEY-WAZUH | apt-key add - && apt-get install wazuh-agent
+                                {% endif %}
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+        </div>
+    </div>
+</body>
+</html>
