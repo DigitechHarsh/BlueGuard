@@ -11,6 +11,36 @@
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
+
+        /* Light Mode Overrides */
+        body.light-mode { background-color: #f8fafc; color: #0f172a; }
+        body.light-mode::-webkit-scrollbar-track { background: #f8fafc; }
+        body.light-mode::-webkit-scrollbar-thumb { background: #cbd5e1; }
+        body.light-mode .text-white { color: #0f172a !important; }
+        body.light-mode .hover\:text-white:hover { color: #0f172a !important; }
+        body.light-mode .text-slate-400 { color: #475569 !important; }
+        body.light-mode .text-slate-300 { color: #334155 !important; }
+        body.light-mode .text-slate-500 { color: #64748b !important; }
+        body.light-mode .text-slate-600 { color: #475569 !important; }
+        body.light-mode .text-blue-400 { color: #2563eb !important; }
+        body.light-mode .text-emerald-400 { color: #059669 !important; }
+        body.light-mode .text-emerald-500 { color: #059669 !important; }
+        body.light-mode .text-red-400 { color: #dc2626 !important; }
+        body.light-mode .text-red-500 { color: #dc2626 !important; }
+        body.light-mode .text-orange-400 { color: #ea580c !important; }
+        body.light-mode .text-orange-500 { color: #ea580c !important; }
+        body.light-mode .text-yellow-400 { color: #ca8a04 !important; }
+        body.light-mode .text-yellow-500 { color: #ca8a04 !important; }
+        body.light-mode .text-cyan-400 { color: #0891b2 !important; }
+        body.light-mode .text-cyan-600 { color: #0e7490 !important; }
+        body.light-mode .text-purple-400 { color: #9333ea !important; }
+        body.light-mode .text-pink-400 { color: #db2777 !important; }
+        body.light-mode .bg-slate-900 { background-color: #e2e8f0 !important; }
+        body.light-mode .bg-slate-800 { background-color: #f1f5f9 !important; }
+        body.light-mode .bg-slate-700 { background-color: #cbd5e1 !important; }
+        body.light-mode .border-slate-700 { border-color: #cbd5e1 !important; }
+        body.light-mode .border-slate-800 { border-color: #cbd5e1 !important; }
+        body.light-mode .hover\:border-slate-600:hover { border-color: #94a3b8 !important; }
     </style>
 </head>
 <body class="p-4 flex flex-col h-screen">
@@ -33,6 +63,9 @@
         <div class="flex items-center space-x-3">
             <span class="text-xs text-slate-500">Auto-refreshing 5s</span>
             <a href="/" class="text-xs text-blue-400 hover:text-white transition">[Back to Dashboard]</a>
+            <button id="themeToggleBtn" class="text-slate-400 hover:text-white transition focus:outline-none p-1 rounded-full hover:bg-slate-800 ml-2" title="Toggle Theme">
+                <i id="themeIcon" class="fa-solid fa-sun text-sm"></i>
+            </button>
         </div>
     </div>
 
@@ -43,122 +76,109 @@
                     <div class="flex justify-between text-xs mb-1">
                         <span class="text-blue-400">{{ alert.get('timestamp', 'N/A')[:19] | replace("T", " ") }}</span>
                         
-                        {% if alert.get('severity') == 'Critical' %}
-                            <span class="text-red-500 font-bold">[CRITICAL]</span>
-                        {% elif alert.get('severity') == 'High' %}
-                            <span class="text-orange-500 font-bold">[HIGH]</span>
-                        {% elif alert.get('severity') == 'Medium' %}
-                            <span class="text-yellow-500 font-bold">[MEDIUM]</span>
-                        {% else %}
-                            <span class="text-emerald-500 font-bold">[LOW]</span>
-                        {% endif %}
+                        <div class="flex items-center space-x-2">
+                            <!-- Base Severity -->
+                            {% set base_sev = alert.get('base_severity', alert.get('severity', 'Unknown')) %}
+                            {% if base_sev == 'Critical' %}
+                                <span class="text-red-500 font-bold">[BASE: CRITICAL]</span>
+                            {% elif base_sev == 'High' %}
+                                <span class="text-orange-500 font-bold">[BASE: HIGH]</span>
+                            {% elif base_sev == 'Medium' %}
+                                <span class="text-yellow-500 font-bold">[BASE: MEDIUM]</span>
+                            {% else %}
+                                <span class="text-emerald-500 font-bold">[BASE: LOW]</span>
+                            {% endif %}
+
+                            <span class="text-cyan-400">→</span>
+
+                            <!-- Org Risk Severity -->
+                            {% set org_sev = alert.get('org_risk_severity', alert.get('severity', 'Unknown')) %}
+                            {% if org_sev == 'Critical' %}
+                                <span class="text-red-500 font-bold">[ORG: CRITICAL]</span>
+                            {% elif org_sev == 'High' %}
+                                <span class="text-orange-500 font-bold">[ORG: HIGH]</span>
+                            {% elif org_sev == 'Medium' %}
+                                <span class="text-yellow-500 font-bold">[ORG: MEDIUM]</span>
+                            {% else %}
+                                <span class="text-emerald-500 font-bold">[ORG: LOW]</span>
+                            {% endif %}
+
+                            {% if base_sev != org_sev %}
+                                <span class="text-cyan-400 font-bold text-[10px]">⬇ MITIGATED</span>
+                            {% endif %}
+                        </div>
                     </div>
                     
                     <div class="text-white text-sm">
                         Host: <span class="text-purple-400">{{ alert.get('agent', {}).get('name', 'Unknown') }}</span> | 
                         Type: <span class="text-pink-400">{{ alert.get('attack_type', 'Unknown') }}</span>
+                        {% if alert.get('cve_cwe', 'N/A') != 'N/A' %}
+                        | 
+                        {% for item in alert.get('cve_cwe', 'N/A').split(',') %}
+                            {% set clean_item = item.strip() %}
+                            {% if clean_item.startswith('CVE-') %}
+                                <a href="https://nvd.nist.gov/vuln/detail/{{ clean_item }}" target="_blank" class="text-red-400 font-mono hover:underline">{{ clean_item }}</a>{% if not loop.last %}, {% endif %}
+                            {% elif clean_item.startswith('CWE-') %}
+                                <a href="https://cwe.mitre.org/data/definitions/{{ clean_item.split('-')[1] }}.html" target="_blank" class="text-orange-400 font-mono hover:underline">{{ clean_item }}</a>{% if not loop.last %}, {% endif %}
+                            {% else %}
+                                <span class="text-slate-400 font-mono">{{ clean_item }}</span>{% if not loop.last %}, {% endif %}
+                            {% endif %}
+                        {% endfor %}
+                        {% endif %}
+                        {% if alert.get('cvss_score', 'N/A') != 'N/A' %}
+                        | <span class="text-yellow-400">CVSS: {{ alert.get('cvss_score') }}</span>
+                        {% endif %}
                     </div>
                     
                     <div class="text-xs text-slate-500 mt-1 truncate">
                         CMD: {{ alert.get('rule', {}).get('description', 'N/A') }}
                     </div>
+                    {% if alert.get('org_risk_assessment', 'N/A') != 'N/A' %}
+                    <div class="text-xs text-cyan-600 mt-1 truncate" title="{{ alert.get('org_risk_assessment') }}">
+                        <i class="fa-solid fa-building-shield mr-1"></i>{{ alert.get('org_risk_assessment', '')[:120] }}...
+                    </div>
+                    {% endif %}
                 </div>
 
-                <!-- Escalate Button ONLY for Tier 1 -->
-                {% if session.get('role') == 'Tier 1 Analyst' %}
-                <div class="ml-4 opacity-0 group-hover:opacity-100 transition">
-                    <button onclick="openEscalateModal('{{ alert._id }}', '{{ alert.severity }}')" class="bg-emerald-600 hover:bg-emerald-500 text-white text-[10px] font-bold px-3 py-1 rounded shadow-lg">
-                        <i class="fa-solid fa-paper-plane mr-1"></i> ESCALATE
-                    </button>
                 </div>
-                {% endif %}
-            </div>
         {% else %}
             <div class="text-center text-slate-600 mt-10">
                 Listening for incoming post requests...
             </div>
         {% endfor %}
-    </div    <!-- ESCALATION MODAL -->
-    <div id="escalateModal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden flex items-center justify-center z-50 p-4">
-        <div class="bg-slate-900 border border-slate-700 p-6 rounded-xl shadow-2xl w-full max-w-lg">
-            <div class="flex justify-between items-center mb-6">
-                <h3 class="text-xl font-bold text-white"><i class="fa-solid fa-file-signature text-emerald-500 mr-2"></i>New Incident Report</h3>
-                <button onclick="closeEscalateModal()" class="text-slate-500 hover:text-white"><i class="fa-solid fa-xmark text-xl"></i></button>
-            </div>
-            
-            <form action="/tickets" method="POST" class="space-y-4">
-                <input type="hidden" name="alert_id" id="modalAlertId">
-                
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-slate-400 text-xs font-bold mb-1 uppercase tracking-wider">Target Responder</label>
-                        <select name="receiver" id="tier2Select" class="w-full bg-slate-800 border border-slate-700 text-white p-2 rounded focus:outline-none focus:border-emerald-500 text-sm" required>
-                            <option value="">Loading analysts...</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-slate-400 text-xs font-bold mb-1 uppercase tracking-wider">Priority Level</label>
-                        <select name="priority" id="modalPriority" class="w-full bg-slate-800 border border-slate-700 text-white p-2 rounded focus:outline-none focus:border-emerald-500 text-sm">
-                            <option value="Low">Low</option>
-                            <option value="Medium">Medium</option>
-                            <option value="High">High</option>
-                            <option value="Critical">Critical</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-slate-400 text-xs font-bold mb-1 uppercase tracking-wider">Report Subject</label>
-                    <input type="text" name="subject" id="modalSubject" placeholder="e.g. Brute Force Attempt on Web Server" class="w-full bg-slate-800 border border-slate-700 text-white p-2 rounded focus:outline-none focus:border-emerald-500 text-sm" required minlength="5" maxlength="100">
-                </div>
-
-                <div>
-                    <label class="block text-slate-400 text-xs font-bold mb-1 uppercase tracking-wider">Analyst Observations</label>
-                    <textarea name="observations" rows="4" placeholder="Describe the suspicious activity and why it requires Tier 2 investigation..." class="w-full bg-slate-800 border border-slate-700 text-white p-2 rounded focus:outline-none focus:border-emerald-500 text-sm" required minlength="10" maxlength="1000"></textarea>
-                </div>
-
-                <div class="flex space-x-3 pt-2">
-                    <button type="button" onclick="closeEscalateModal()" class="flex-grow bg-slate-800 hover:bg-slate-700 text-white text-xs font-bold py-3 rounded tracking-widest transition">CANCEL</button>
-                    <button type="submit" class="flex-grow bg-emerald-600 hover:bg-emerald-500 text-white text-xs font-bold py-3 rounded tracking-widest transition shadow-lg shadow-emerald-500/20">SUBMIT INCIDENT REPORT</button>
-                </div>
-            </form>
-        </div>
     </div>
 
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
-        let refreshEnabled = true;
-
-        function openEscalateModal(alertId, severity) {
-            refreshEnabled = false;
-            document.getElementById('modalAlertId').value = alertId;
-            document.getElementById('modalPriority').value = severity || 'Medium';
-            document.getElementById('modalSubject').value = "Incident Analysis: " + severity + " Alert";
-            document.getElementById('escalateModal').classList.remove('hidden');
-            
-            fetch('/get_tier2_users')
-                .then(res => res.json())
-                .then(users => {
-                    const select = document.getElementById('tier2Select');
-                    select.innerHTML = '<option value="">-- Choose Tier 2 Analyst --</option>';
-                    users.forEach(u => {
-                        const opt = document.createElement('option');
-                        opt.value = u;
-                        opt.textContent = u;
-                        select.appendChild(opt);
-                    });
-                });
-        }
-
-        function closeEscalateModal() {
-            document.getElementById('escalateModal').classList.add('hidden');
-            refreshEnabled = true;
+        // Check local storage and apply theme immediately before full page load
+        if (localStorage.getItem('theme') === 'light') {
+            document.body.classList.add('light-mode');
         }
 
         setTimeout(function() { 
-            if(refreshEnabled) location.reload(); 
+            location.reload(); 
         }, 5000);
+
+        // Theme Toggle Logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const themeToggleBtn = document.getElementById('themeToggleBtn');
+            const themeIcon = document.getElementById('themeIcon');
+            
+            if (localStorage.getItem('theme') === 'light') {
+                themeIcon.classList.replace('fa-sun', 'fa-moon');
+            }
+
+            themeToggleBtn.addEventListener('click', () => {
+                document.body.classList.toggle('light-mode');
+                if (document.body.classList.contains('light-mode')) {
+                    localStorage.setItem('theme', 'light');
+                    themeIcon.classList.replace('fa-sun', 'fa-moon');
+                } else {
+                    localStorage.setItem('theme', 'dark');
+                    themeIcon.classList.replace('fa-moon', 'fa-sun');
+                }
+            });
+        });
     </script>
 </body>
 </html>
-l>
