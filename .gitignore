@@ -1,33 +1,21 @@
-# Byte-compiled / optimized / DLL files
+# Python
 __pycache__/
 *.py[cod]
 *$py.class
-
-# Environments
-.env
-.venv
-env/
 venv/
-ENV/
-env.bak/
-venv.bak/
+.venv/
+env/
+.env
 
 # Database
 data/
-*.db
-*.sqlite
+*.sqlite3
 
-# IDEs
-.vscode/
-.idea/
-
-# OS files
+# OS
 .DS_Store
 Thumbs.db
 
-# Project Specific
-blueguard_index.md
-blueguard_test_plan.md
-blueguard_data_dictionary.md
-blueguard_blackbook_ch5.md
-critical_threat_simulator.py
+# IDE
+.vscode/
+.idea/
+*.swp

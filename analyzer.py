@@ -69,30 +69,40 @@ def classify_attack(alert):
     Check for "File integrity monitoring" or "syscheck" in the description.
     If it's a FIM alert, identify which file was changed and what was the nature of the change (added, modified, deleted).
 
-    Provide a JSON response with exactly these TEN keys:
+    Provide a JSON response with exactly these THIRTEEN keys:
 
-    1. "attack_type": A short classification string (e.g., "File Modification", "Brute Force Attempt", "Persistence").
-    2. "mitre_tactic": The corresponding MITRE ATT&CK Tactic (e.g., "Defense Evasion", "Persistence", "Credential Access").
-    3. "mitre_technique": The specific MITRE Technique with ID (e.g., "Indicator Removal (T1070)", "Brute Force (T1110)").
-    4. "analysis": A SHORT, CONCISE 1-2 sentence explanation of what this event implies. No long paragraphs.
-    5. "severity": The ADJUSTED organizational risk severity after considering the security controls ("Critical", "High", "Medium", or "Low"). This should reflect the ACTUAL risk to THIS specific organization.
-    6. "remediation": 1-2 actionable steps (e.g., "Verify file hash", "Revert file change").
-    7. "cve_cwe": A comma-separated list of ALL relevant CVE or CWE identifiers. IMPORTANT: If no specific CVE exists (like for generic XSS or Brute Force), you MUST provide the relevant CWE (e.g., "CWE-79" for XSS, "CWE-307" for Brute Force). DO NOT use "N/A" if a CWE category exists.
-    8. "cvss_score": The estimated CVSS base score as a string (e.g., "9.8", "7.5", "4.0"). Use "N/A" if not determinable.
-    9. "base_severity": The ORIGINAL severity of the vulnerability WITHOUT considering organizational controls ("Critical", "High", "Medium", or "Low"). This is the raw/generic risk.
-    10. "org_risk_assessment": A CONCISE 2-3 sentence paragraph covering: (a) Real-world exploitability considering org controls, (b) Likelihood of false positives, (c) Recommended priority. Explain HOW controls reduce risk. Keep it simple.
+    1. "threat_actor": "Classification of the actor (e.g., 'Advanced Persistent Threat', 'Botnet', 'Cyber Criminal'). NEVER use 'Unknown'.",
+    2. "attack_vector": "Technical method (e.g., 'SMB Buffer Overflow', 'JNDI Remote Code Execution'). NEVER use 'Unknown'.",
+    3. "mitre_technique_id": "MITRE ID (e.g., T1059).",
+    4. "mitre_technique_name": "Full name.",
+    5. "cve_id": "Comma-separated list of REAL CVE IDs (e.g., 'CVE-2021-44228, CVE-2021-45046') or 'N/A'.",
+    6. "cwe_id": "Comma-separated list of CWE IDs (e.g., 'CWE-78, CWE-77').",
+    7. "cvss_score": "Standard CVSS (0.0-10.0).",
+    8. "cwss_score": "Environmental Score (0.0-100.0).",
+    9. "risk_severity": "Critical/High/Medium/Low.",
+    10. "remediation_steps": "Action-oriented steps. ULTRA-CONCISE (max 5 words per step). USE NEWLINES (\\n) between steps.",
+    11. "forensic_summary": "One-line technical summary.",
+    12. "org_impact": "Impact on the specific asset.",
+    13. "reasoning": "Internal logic for this classification."
+
+    STRICT POLICY: 
+    - NO 'Unknown', NO 'N/A', NO placeholders. 
+    - If data is sparse, use HEURISTIC REASONING to provide the most likely IDs and scores. 
+    - This is for a high-fidelity security research project; 100% data population is MANDATORY.
     """
 
     try:
         response = client.chat.completions.create(
-            model="openai/gpt-4o-mini",
+            model="google/gemini-2.0-flash-001",
             messages=[
                 {
                     "role": "user",
                     "content": prompt
                 }
             ],
-            temperature=0.1
+            temperature=0.1,
+            max_tokens=600,
+            response_format={ "type": "json_object" }
         )
         
         result_text = response.choices[0].message.content
@@ -106,28 +116,65 @@ def classify_attack(alert):
             result = json.loads(result_text)
             # Ensure all required keys exist
             required_keys = ["attack_type", "mitre_tactic", "mitre_technique", "analysis",
-                           "severity", "remediation", "cve_cwe", "cvss_score",
+                           "severity", "remediation", "cve_cwe", "cvss_score", "cwss_score",
                            "base_severity", "org_risk_assessment"]
             for key in required_keys:
                 if key not in result:
                     result[key] = "N/A"
             
-            # --- SEVERITY SAFETY OVERRIDE ---
-            # Forced Critical/High for catastrophic threats regardless of AI optimism
+            # --- SEVERITY SAFETY OVERRIDE & CVSS SYNC ---
             desc_lower = description.lower()
             atk_lower = str(result.get("attack_type", "")).lower()
             
+            # 1. Check for Critical Threats
             if any(x in desc_lower or x in atk_lower for x in ["wannacry", "ransomware", "encrypt", "malware"]):
                 result["severity"] = "Critical"
                 result["org_risk_severity"] = "Critical"
+                result["cvss_score"] = "9.8" # Sync with Critical Range (9.0-10.0)
                 result["org_risk_assessment"] = "CRITICAL OVERRIDE: " + str(result.get("org_risk_assessment", ""))
+            
+            # 2. Check for Admin/Root activity (High Priority)
             elif any(x in desc_lower or x in atk_lower for x in ["root", "privilege escalation", "admin"]):
                 if result.get("severity") not in ["Critical", "High"]:
                     result["severity"] = "High"
                     result["org_risk_severity"] = "High"
-            else:
-                # Ensure org_risk_severity exists if not overridden
-                result["org_risk_severity"] = result.get("severity", "Unknown")
+                    result["cvss_score"] = "7.5" # Sync with High Range (7.0-8.9)
+            
+            # 3. Final Range Validation (Ensure CVSS matches the final Severity string)
+            final_sev = result.get("severity", "Low")
+            try:
+                current_cvss = float(result.get("cvss_score", 0))
+            except:
+                current_cvss = 0
+
+            if final_sev == "Critical":
+                if current_cvss < 9.0: result["cvss_score"] = "9.5"
+                try:
+                    if float(result.get("cwss_score", 0)) < 90.0: result["cwss_score"] = "95.0"
+                except: result["cwss_score"] = "95.0"
+            elif final_sev == "High":
+                if current_cvss < 7.0 or current_cvss >= 9.0: result["cvss_score"] = "8.2"
+                try:
+                    val = float(result.get("cwss_score", 0))
+                    if val < 70.0 or val >= 90.0: result["cwss_score"] = "82.5"
+                except: result["cwss_score"] = "82.5"
+            elif final_sev == "Medium":
+                if current_cvss < 4.0 or current_cvss >= 7.0: result["cvss_score"] = "5.5"
+                try:
+                    val = float(result.get("cwss_score", 0))
+                    if val < 40.0 or val >= 70.0: result["cwss_score"] = "58.0"
+                except: result["cwss_score"] = "58.0"
+            elif final_sev == "Low":
+                if current_cvss < 0.1 or current_cvss >= 4.0: result["cvss_score"] = "3.2"
+                try:
+                    val = float(result.get("cwss_score", 0))
+                    if val < 10.0 or val >= 40.0: result["cwss_score"] = "25.0"
+                except: result["cwss_score"] = "25.0"
+            elif final_sev == "None":
+                result["cvss_score"] = "0.0"
+                result["cwss_score"] = "5.0"
+
+            result["org_risk_severity"] = result.get("severity", "Unknown")
 
             return json.dumps(result)
         except json.JSONDecodeError as decode_error:
@@ -145,6 +192,7 @@ def classify_attack(alert):
         attack_type = "Security Event"
         cve_cwe = "N/A"
         cvss_score = "N/A"
+        cwss_score = "0.0"
         base_severity = "Medium"
         org_risk_severity = "Low"
         org_risk_assessment = "AI analysis unavailable. Based on organizational security controls (internal network only, Palo Alto firewall, Wazuh monitoring, no root access), the risk is assessed as reduced. Manual investigation recommended."
@@ -220,6 +268,7 @@ def classify_attack(alert):
             "remediation": remediation,
             "cve_cwe": cve_cwe,
             "cvss_score": cvss_score,
+            "cwss_score": cwss_score,
             "base_severity": base_severity,
             "org_risk_severity": org_risk_severity,
             "org_risk_assessment": org_risk_assessment
