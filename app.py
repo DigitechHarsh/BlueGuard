@@ -1,24 +1,32 @@
-from flask import Flask, request, jsonify, render_template, Response
+from flask import Flask, request, jsonify, render_template, Response, redirect
 import csv
 import io
+import os
+from dotenv import load_dotenv
+load_dotenv()   # ← MUST be before any os.getenv() calls
+
 from analyzer import classify_attack
 from notifier import send_critical_alert_email
 from pymongo import MongoClient
 import threading
 import json
 import datetime
-import os
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
 
+import certifi
+ca = certifi.where()
+
 # MongoDB Setup
 try:
-    client = MongoClient("mongodb://localhost:27017/", serverSelectionTimeoutMS=5000)
+    client = MongoClient(os.getenv("MONGO_URI", "mongodb://localhost:27017/"), 
+                         serverSelectionTimeoutMS=10000,
+                         tlsCAFile=ca)
     db = client.blueguard_db
     # Test connection
     client.server_info()
-    print("[MDB] Connected to MongoDB locally.")
+    print("[MDB] ✅ Connected to MongoDB Atlas (cloud)!")
 except Exception as e:
     print(f"[FATAL] MongoDB connection failed: {e}")
 
@@ -68,18 +76,15 @@ def home():
     start_time = request.args.get("start_time", "")
     end_time = request.args.get("end_time", "")
     page = int(request.args.get("page", 1))
-    limit = 15  # Increased for better visibility
+    limit = 10
     
-    # Get paginated alerts directly (NO GROUPING for true live stream)
     alerts_list, total_count = get_filtered_alerts(agent_filter, start_time, end_time, page=page, limit=limit)
     
-    # Stats from recent data
-    all_recent, _ = get_filtered_alerts(agent_filter, start_time, end_time, limit=200)
-    
+    # Simple summary stats for dashboard
     stats = {
         "total": total_count,
-        "critical": sum(1 for a in all_recent if a.get("org_risk") == "Critical"),
-        "high": sum(1 for a in all_recent if a.get("org_risk") == "High")
+        "critical": sum(1 for a in alerts_list if a.get("org_risk") == "Critical"),
+        "high": sum(1 for a in alerts_list if a.get("org_risk") == "High")
     }
     
     # Build query for charts (consistent with filters)
@@ -115,6 +120,169 @@ def home():
                            current_end=end_time,
                            page=page,
                            total_pages=total_pages)
+
+@app.route("/vulnerabilities", methods=["GET"])
+def vulnerabilities():
+    scan_id = request.args.get("scan_id")
+    asset_filter = request.args.get("asset", "All")
+    sev_filter = request.args.get("severity", "All")
+    page = int(request.args.get("page", 1))
+    limit = 20
+
+    # If NO scan_id, show the GRID of SCANS
+    if not scan_id:
+        scans = list(db.nessus_scans.find().sort("timestamp", -1))
+        # Summary stats for all scans
+        total_vulns = db.vulnerabilities.count_documents({})
+        critical_vulns = db.vulnerabilities.count_documents({"nessus_severity": {"$regex": "Critical", "$options": "i"}})
+        total_assets = len(db.vulnerabilities.distinct("asset_name"))
+        
+        return render_template("vulnerabilities.html", 
+                               view_mode="grid",
+                               scans=scans,
+                               stats={"total_vulns": total_vulns, "critical_vulns": critical_vulns, "total_assets": total_assets})
+
+    # If scan_id is present, show the TABLE for that specific scan
+    query = {"scan_id": scan_id}
+    if asset_filter != "All":
+        query["asset_name"] = asset_filter
+    if sev_filter != "All":
+        query["nessus_severity"] = {"$regex": sev_filter, "$options": "i"}
+    
+    total_count = db.vulnerabilities.count_documents(query)
+    vulns = list(db.vulnerabilities.find(query).sort("nessus_severity", -1).skip((page - 1) * limit).limit(limit))
+    
+    # —— 📊 SUMMARY STATS FOR THIS SPECIFIC SCAN ——
+    critical_count = db.vulnerabilities.count_documents({**query, "nessus_severity": {"$regex": "Critical", "$options": "i"}})
+    max_vpr_doc = db.vulnerabilities.find_one(query, sort=[("vpr_score", -1)])
+    max_vpr = max_vpr_doc.get("vpr_score", "0.0") if max_vpr_doc else "0.0"
+    at_risk_assets = len(db.vulnerabilities.distinct("asset_name", {**query, "nessus_severity": {"$in": ["Critical", "High", "critical", "high"]}}))
+    
+    summary_stats = {
+        "total_assets": len(db.vulnerabilities.distinct("asset_name", {"scan_id": scan_id})),
+        "critical_vulns": critical_count,
+        "max_vpr": max_vpr,
+        "at_risk_count": at_risk_assets
+    }
+    
+    total_pages = max(1, (total_count + limit - 1) // limit)
+    available_assets = db.vulnerabilities.distinct("asset_name", {"scan_id": scan_id})
+    scan_meta = db.nessus_scans.find_one({"scan_id": scan_id})
+    
+    return render_template("vulnerabilities.html", 
+                           view_mode="table",
+                           vulns=vulns, 
+                           available_assets=available_assets,
+                           current_asset=asset_filter,
+                           current_severity=sev_filter,
+                           current_scan_id=scan_id,
+                           scan_name=scan_meta.get("name", "Unknown Scan") if scan_meta else "Unknown Scan",
+                           page=page,
+                           total_pages=total_pages,
+                           stats=summary_stats)
+
+@app.route("/upload_nessus", methods=["POST"])
+def upload_nessus():
+    if 'file' not in request.files:
+        return jsonify({"error": "No file uploaded"}), 400
+    
+    file = request.files['file']
+    scan_name = request.form.get("scan_name", f"Scan_{datetime.datetime.now().strftime('%Y%m%d_%H%M')}")
+    
+    if file.filename == '':
+        return jsonify({"error": "No file selected"}), 400
+    
+    if file and file.filename.endswith('.csv'):
+        # 1. Create a unique Scan ID
+        import uuid
+        scan_id = str(uuid.uuid4())[:8]
+        
+        # 2. Parse CSV
+        stream = io.StringIO(file.stream.read().decode("UTF8"), newline=None)
+        reader = csv.DictReader(stream)
+        
+        vulns_to_insert = []
+        for row in reader:
+            # --- SMART MAPPING LOGIC ---
+            # Hum saari keys ko lowercase kar dete hain taaki matching asaan ho
+            row_lower = {k.lower().strip(): v for k, v in row.items() if k}
+            
+            def get_field(options):
+                for opt in options:
+                    for key in row_lower:
+                        if opt.lower() in key: # Partial match (e.g. 'asset.nam' contains 'asset')
+                            return row_lower[key]
+                return None
+
+            asset = get_field(["asset.name", "asset.nam", "host", "ip address", "dns"]) or "Unknown"
+            v_name = get_field(["definition.name", "vuln name", "name", "title"]) or "Unknown Vulnerability"
+            cve = get_field(["definition.cve", "cve id", "cve"]) or "N/A"
+            sev = get_field(["severity", "risk", "definition.severity"]) or "Low"
+            vpr = get_field(["definition.vpr_v2.score", "vpr score", "vpr"]) or "0.0"
+            
+            doc = {
+                "scan_id": scan_id,
+                "asset_name": asset,
+                "vuln_name": v_name,
+                "cve_id": cve,
+                "nessus_severity": sev,
+                "vpr_score": vpr,
+                "synopsis": row.get("Synopsis", ""),
+                "description": row.get("description", row.get("Description", "")),
+                "solution": row.get("solution", row.get("Solution", "")),
+                "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+            }
+            vulns_to_insert.append(doc)
+        
+        if vulns_to_insert:
+            db.vulnerabilities.insert_many(vulns_to_insert)
+            
+            # 3. Create Scan Metadata
+            db.nessus_scans.insert_one({
+                "scan_id": scan_id,
+                "name": scan_name,
+                "filename": file.filename,
+                "total_vulns": len(vulns_to_insert),
+                "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M")
+            })
+            
+            return redirect("/vulnerabilities")
+    
+    return jsonify({"error": "Invalid file format. Please upload a CSV."}), 400
+
+@app.route("/delete_scan/<scan_id>", methods=["POST"])
+def delete_scan(scan_id):
+    db.vulnerabilities.delete_many({"scan_id": scan_id})
+    db.nessus_scans.delete_one({"scan_id": scan_id})
+    return redirect("/vulnerabilities")
+
+@app.route("/nuke_vulnerabilities")
+def nuke_vulnerabilities():
+    db.vulnerabilities.delete_many({})
+    db.nessus_scans.delete_many({})
+    return "🧹 Database Cleaned! Go back to /vulnerabilities and refresh."
+
+@app.route("/analyze_vulnerability/<vuln_id>", methods=["POST"])
+def analyze_vuln_route(vuln_id):
+    from bson import ObjectId
+    vuln = db.vulnerabilities.find_one({"_id": ObjectId(vuln_id)})
+    if not vuln:
+        return jsonify({"error": "Vulnerability not found"}), 404
+    
+    from analyzer import analyze_vulnerability
+    try:
+        analysis_result = analyze_vulnerability(vuln)
+        print(f"[DEBUG] AI Response: {analysis_result}")
+        
+        # Load JSON and handle if AI returns a list instead of a single object
+        data = json.loads(analysis_result)
+        if isinstance(data, list) and len(data) > 0:
+            data = data[0]
+            
+        return jsonify(data), 200
+    except Exception as e:
+        print(f"Route Analysis Error: {e}")
+        return jsonify({"error": "AI analysis failed", "org_risk": "High"}), 500
 
 @app.route("/logs", methods=["GET"])
 def logs():
@@ -259,7 +427,16 @@ def webhook():
     try:
         # Perform AI Analysis SYNCHRONOUSLY
         ai_response_str = classify_attack(data)
-        ai_data = json.loads(ai_response_str)
+        
+        # ✅ ROBUST PARSING: Handle both dict AND list responses from AI
+        raw = json.loads(ai_response_str)
+        if isinstance(raw, list):
+            # AI returned an array — take the first item
+            ai_data = raw[0] if raw else {}
+        elif isinstance(raw, dict):
+            ai_data = raw
+        else:
+            ai_data = {}
         
         # --- EXHAUSTIVE HEURISTIC SAFETY NET ---
         desc = data.get("rule", {}).get("description", "").lower()
@@ -267,48 +444,68 @@ def webhook():
         combined_text = desc + " " + log_text
         
         intel_library = {
-            "reverse shell": {"cve": "N/A", "cwe": "CWE-78, CWE-427", "cvss": 8.5, "cwss": 92.0, "actor": "Reverse Shell Operator"},
-            "brute force": {"cve": "N/A", "cwe": "CWE-307, CWE-521", "cvss": 5.8, "cwss": 65.0, "actor": "Brute Force Botnet"},
-            "eternalblue": {"cve": "CVE-2017-0144, CVE-2017-0145", "cwe": "CWE-119, CWE-254", "cvss": 9.8, "cwss": 98.0, "actor": "Shadow Brokers / WannaCry"},
-            "proxylogon": {"cve": "CVE-2021-26855, CVE-2021-26857, CVE-2021-26858, CVE-2021-27065", "cwe": "CWE-20, CWE-287, CWE-502", "cvss": 9.8, "cwss": 95.0, "actor": "Hafnium Group"},
-            "zerologon": {"cve": "CVE-2020-1472", "cwe": "CWE-287, CWE-326", "cvss": 10.0, "cwss": 100.0, "actor": "Domain Controller Exploit"},
-            "log4j": {"cve": "CVE-2021-44228, CVE-2021-45046", "cwe": "CWE-502, CWE-400, CWE-917", "cvss": 10.0, "cwss": 100.0, "actor": "APT Intruder"},
-            "log4shell": {"cve": "CVE-2021-44228, CVE-2021-45046", "cwe": "CWE-502, CWE-400, CWE-917", "cvss": 10.0, "cwss": 100.0, "actor": "APT Intruder"},
-            "solarwinds": {"cve": "CVE-2020-10148, CVE-2020-10189", "cwe": "CWE-494, CWE-506", "cvss": 9.8, "cwss": 98.0, "actor": "Sunburst APT"},
-            "f5 big-ip": {"cve": "CVE-2020-5902, CVE-2021-22986", "cwe": "CWE-22, CWE-77", "cvss": 9.8, "cwss": 95.0, "actor": "F5 Exploiter"},
-            "printnightmare": {"cve": "CVE-2021-34527", "cwe": "CWE-427, CWE-269", "cvss": 8.8, "cwss": 90.0, "actor": "Privilege Escalator"},
-            "spring4shell": {"cve": "CVE-2022-22965", "cwe": "CWE-119", "cvss": 9.8, "cwss": 95.0, "actor": "Spring Core Exploiter"},
-            "solarwinds": {"cve": "CVE-2020-10148", "cwe": "CWE-494", "cvss": 9.8, "cwss": 95.0, "actor": "Sunburst APT"},
-            "mimikatz": {"cve": "N/A", "cwe": "CWE-259", "cvss": 7.5, "cwss": 85.0, "actor": "Credential Thief"},
-            "lockbit": {"cve": "N/A", "cwe": "CWE-200", "cvss": 9.8, "cwss": 98.0, "actor": "LockBit Ransomware Group"},
-            "mbr destruction": {"cve": "N/A", "cwe": "CWE-676", "cvss": 9.0, "cwss": 95.0, "actor": "Data Wiper / NotPetya"},
-            "dns tunneling": {"cve": "N/A", "cwe": "CWE-200", "cvss": 6.5, "cwss": 75.0, "actor": "Exfiltration Specialist"},
-            "sql injection": {"cve": "N/A", "cwe": "CWE-89", "cvss": 7.5, "cwss": 82.0, "actor": "Web Application Exploiter"},
-            "port scan": {"cve": "N/A", "cwe": "CWE-200", "cvss": 4.5, "cwss": 45.0, "actor": "Reconnaissance Bot"},
-            "xss": {"cve": "N/A", "cwe": "CWE-79", "cvss": 6.1, "cwss": 65.0, "actor": "Script Kiddie"},
-            "cross-site scripting": {"cve": "N/A", "cwe": "CWE-79", "cvss": 6.1, "cwss": 65.0, "actor": "Script Kiddie"}
+            "wannacry": {"cve": "CVE-2017-0144, CVE-2017-0145", "cwe": "CWE-119, CWE-254", "cvss": 9.8, "cwss": 98.0, "actor": "WannaCry Ransomware Operator"},
+            "ransomware": {"cve": "CVE-2017-0144", "cwe": "CWE-119, CWE-200", "cvss": 9.8, "cwss": 98.0, "actor": "Ransomware Operator"},
+            "lockbit": {"cve": "CVE-2021-34527", "cwe": "CWE-269, CWE-200", "cvss": 9.8, "cwss": 98.0, "actor": "LockBit 3.0 Operator"},
+            "eternalblue": {"cve": "CVE-2017-0144, CVE-2017-0145", "cwe": "CWE-119, CWE-254", "cvss": 9.8, "cwss": 98.0, "actor": "Shadow Brokers APT"},
+            "log4j": {"cve": "CVE-2021-44228, CVE-2021-45046", "cwe": "CWE-502, CWE-917", "cvss": 10.0, "cwss": 100.0, "actor": "APT Log4Shell Exploiter"},
+            "log4shell": {"cve": "CVE-2021-44228, CVE-2021-45046", "cwe": "CWE-502, CWE-917", "cvss": 10.0, "cwss": 100.0, "actor": "APT Log4Shell Exploiter"},
+            "proxylogon": {"cve": "CVE-2021-26855, CVE-2021-26857", "cwe": "CWE-20, CWE-287", "cvss": 9.8, "cwss": 95.0, "actor": "Hafnium APT Group"},
+            "zerologon": {"cve": "CVE-2020-1472", "cwe": "CWE-287, CWE-326", "cvss": 10.0, "cwss": 100.0, "actor": "Domain Privilege Escalator"},
+            "printnightmare": {"cve": "CVE-2021-34527", "cwe": "CWE-427, CWE-269", "cvss": 8.8, "cwss": 90.0, "actor": "Print Spooler Exploiter"},
+            "spring4shell": {"cve": "CVE-2022-22965", "cwe": "CWE-94, CWE-119", "cvss": 9.8, "cwss": 95.0, "actor": "Spring Core Exploiter"},
+            "moveit": {"cve": "CVE-2023-34362", "cwe": "CWE-89, CWE-284", "cvss": 9.8, "cwss": 97.0, "actor": "Clop Ransomware Group"},
+            "citrix": {"cve": "CVE-2023-4966", "cwe": "CWE-125, CWE-200", "cvss": 9.4, "cwss": 94.0, "actor": "Citrix Bleed Exploiter"},
+            "ivanti": {"cve": "CVE-2024-21887, CVE-2023-46805", "cwe": "CWE-918, CWE-287", "cvss": 9.1, "cwss": 92.0, "actor": "APT UTA0178"},
+            "fortinet": {"cve": "CVE-2024-55591", "cwe": "CWE-287, CWE-306", "cvss": 9.6, "cwss": 96.0, "actor": "Fortinet APT Exploiter"},
+            "paloalto": {"cve": "CVE-2024-3400", "cwe": "CWE-77, CWE-78", "cvss": 10.0, "cwss": 100.0, "actor": "UTA0218 APT Group"},
+            "pan-os": {"cve": "CVE-2024-3400", "cwe": "CWE-77", "cvss": 10.0, "cwss": 100.0, "actor": "UTA0218 APT Group"},
+            "struts": {"cve": "CVE-2023-50164", "cwe": "CWE-434, CWE-22", "cvss": 9.8, "cwss": 95.0, "actor": "Struts RCE Exploiter"},
+            "mimikatz": {"cve": "CVE-2021-36934", "cwe": "CWE-259, CWE-522", "cvss": 7.8, "cwss": 85.0, "actor": "Credential Theft Operator"},
+            # FinTech Specific
+            "swift": {"cve": "CVE-2022-26134", "cwe": "CWE-284, CWE-287", "cvss": 9.8, "cwss": 99.0, "actor": "Financial Fraud APT"},
+            "pci": {"cve": "CVE-2023-28432", "cwe": "CWE-200, CWE-311", "cvss": 7.5, "cwss": 85.0, "actor": "Compliance Violator"},
+            "pci_dss": {"cve": "CVE-2023-28432", "cwe": "CWE-200, CWE-311", "cvss": 7.5, "cwss": 85.0, "actor": "Compliance Violator"},
+            "cardholder": {"cve": "CVE-2023-28432", "cwe": "CWE-200, CWE-311", "cvss": 8.0, "cwss": 90.0, "actor": "Card Data Thief"},
+            "hsm": {"cve": "CVE-2019-14821", "cwe": "CWE-284, CWE-330", "cvss": 9.8, "cwss": 99.0, "actor": "Cryptographic Attack APT"},
+            "rtgs": {"cve": "CVE-2022-26134", "cwe": "CWE-284, CWE-89", "cvss": 9.8, "cwss": 99.0, "actor": "Banking Fraud Operator"},
+            "core banking": {"cve": "CVE-2021-4034", "cwe": "CWE-269, CWE-284", "cvss": 9.8, "cwss": 99.0, "actor": "Banking Infrastructure APT"},
+            "idor": {"cve": "CVE-2023-29489", "cwe": "CWE-639, CWE-284", "cvss": 7.5, "cwss": 80.0, "actor": "Insecure API Exploiter"},
+            "otp bypass": {"cve": "CVE-2022-36946", "cwe": "CWE-287, CWE-303", "cvss": 7.5, "cwss": 78.0, "actor": "Authentication Bypass Attacker"},
+            # Generic
+            "sql injection": {"cve": "CVE-2023-28432", "cwe": "CWE-89", "cvss": 7.5, "cwss": 82.0, "actor": "Web Application Exploiter"},
+            "xss": {"cve": "CVE-2023-29489", "cwe": "CWE-79", "cvss": 6.1, "cwss": 65.0, "actor": "Cross-Site Script Injector"},
+            "cross-site scripting": {"cve": "CVE-2023-29489", "cwe": "CWE-79", "cvss": 6.1, "cwss": 65.0, "actor": "Cross-Site Script Injector"},
+            "brute force": {"cve": "CVE-2022-36946", "cwe": "CWE-307, CWE-521", "cvss": 5.8, "cwss": 65.0, "actor": "Brute Force Botnet"},
+            "traversal": {"cve": "CVE-2021-41773", "cwe": "CWE-22", "cvss": 7.5, "cwss": 78.0, "actor": "Directory Traversal Attacker"},
+            "dns tunnel": {"cve": "CVE-2021-25220", "cwe": "CWE-200", "cvss": 6.5, "cwss": 75.0, "actor": "Exfiltration Specialist"},
+            "syscheck": {"cve": "CVE-2023-32629", "cwe": "CWE-732", "cvss": 5.5, "cwss": 60.0, "actor": "Insider Threat"},
+            "port scan": {"cve": "CVE-2021-25220", "cwe": "CWE-200", "cvss": 4.5, "cwss": 45.0, "actor": "Reconnaissance Bot"},
+            "c2": {"cve": "CVE-2021-44228", "cwe": "CWE-200, CWE-78", "cvss": 8.0, "cwss": 88.0, "actor": "C2 Operator"},
+            "ebpf": {"cve": "CVE-2025-21756", "cwe": "CWE-416, CWE-269", "cvss": 7.8, "cwss": 82.0, "actor": "Linux Kernel Exploiter"},
+            "tls": {"cve": "CVE-2021-3449", "cwe": "CWE-326", "cvss": 5.9, "cwss": 58.0, "actor": "Protocol Downgrade Attacker"},
+            "reverse shell": {"cve": "CVE-2022-26134", "cwe": "CWE-78, CWE-427", "cvss": 8.5, "cwss": 92.0, "actor": "Reverse Shell Operator"},
         }
 
-        # Initial assignments from AI
+        # Initial assignments from AI (using new key names)
         actor = ai_data.get("threat_actor", "Unknown")
         vector = ai_data.get("attack_vector", "Unknown")
         
         # Apply safety net if AI was vague or missing IDs
         for key, intel in intel_library.items():
-            # Robust check in both description and full log
             if key in combined_text or key.replace(" ", "") in combined_text.replace(" ", ""):
-                if actor == "Unknown" or actor == "Unknown Actor":
+                if actor in ["Unknown", "Unknown Actor", "Unspecified", "N/A", ""]:
                     actor = intel["actor"]
-                if vector == "Unknown" or vector == "Unknown Vector":
+                if vector in ["Unknown", "Unknown Vector", "Unspecified", "N/A", ""]:
                     vector = key.upper()
                 
-                # Force update scores if they are missing or N/A
+                # Force update CVE/CWE if they are missing or N/A
                 current_cve = ai_data.get("cve_id", "N/A")
                 current_cwe = ai_data.get("cwe_id", "N/A")
                 
-                if current_cve == "N/A" or not current_cve or current_cve == "":
+                if not current_cve or current_cve in ["N/A", "", "None", "Unspecified"]:
                     ai_data["cve_id"] = intel["cve"]
-                if current_cwe == "N/A" or not current_cwe or current_cwe == "":
+                if not current_cwe or current_cwe in ["N/A", "", "None", "Unspecified"]:
                     ai_data["cwe_id"] = intel["cwe"]
                 
                 try:
@@ -346,18 +543,44 @@ def webhook():
             if cwss >= 40.0: cwss = 25.0
             if cvss >= 4.0: cvss = 2.5
 
-        data["attack_type"] = vector if actor == "Unknown" else actor
+        data["attack_type"] = actor if actor not in ["Unknown", "Unspecified", ""] else vector
         data["mitre_tactic"] = vector
         data["mitre_technique"] = ai_data.get("mitre_technique_id", "N/A")
         data["mitre_technique_name"] = ai_data.get("mitre_technique_name", "N/A")
         
-        data["cve_id"] = ai_data.get("cve_id", "N/A")
-        data["cwe_id"] = ai_data.get("cwe_id", "N/A")
+        # ✅ CVE PRE-SEED: If payload already has explicit CVE/CWE, use it directly
+        payload_cve = data.get("data", {}).get("cve", "")
+        payload_cwe = data.get("data", {}).get("cwe", "")
+        
+        if payload_cve and payload_cve.strip() and payload_cve != "N/A":
+            data["cve_id"] = payload_cve.strip()
+        else:
+            data["cve_id"] = ai_data.get("cve_id", "N/A")
+            
+        if payload_cwe and payload_cwe.strip() and payload_cwe != "N/A":
+            data["cwe_id"] = payload_cwe.strip()
+        else:
+            data["cwe_id"] = ai_data.get("cwe_id", "N/A")
+
         data["cvss_score"] = f"{cvss:.1f}"
         data["cwss_score"] = f"{cwss:.1f}"
         
-        data["org_risk"] = org_sev
-        data["severity"] = org_sev
+        # ✅ SOURCE IP: Extract from multiple possible payload locations
+        src_ip = (
+            data.get("agent", {}).get("ip") or
+            data.get("data", {}).get("srcip") or
+            data.get("data", {}).get("src_ip") or
+            data.get("srcip") or
+            "N/A"
+        )
+        data["src_ip"] = src_ip
+        
+        # Use AI's risk_severity as the primary risk level (fallback to base severity)
+        final_risk = ai_data.get("risk_severity", org_sev)
+        if final_risk not in ["Critical", "High", "Medium", "Low"]:
+            final_risk = org_sev
+        data["org_risk"] = final_risk
+        data["severity"] = final_risk
         
         data["remediation"] = ai_data.get("remediation_steps", "No remediation suggested.")
         data["analysis"] = ai_data.get("forensic_summary", "No forensic details available.")

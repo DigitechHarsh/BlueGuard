@@ -11,131 +11,121 @@
         .glass-panel { background: rgba(30, 41, 59, 0.7); backdrop-filter: blur(10px); border: 1px solid rgba(255, 255, 255, 0.1); }
         .health-bar { transition: width 1s ease-in-out; }
         body.light-mode { background-color: #f8fafc; color: #0f172a; }
-        body.light-mode .glass-panel { background: rgba(255, 255, 255, 0.85); border: 1px solid rgba(0, 0, 0, 0.1); box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1); }
-        body.light-mode .text-white { color: #0f172a !important; }
-        body.light-mode .text-slate-400 { color: #475569 !important; }
+        body.light-mode .glass-panel { background: rgba(255, 255, 255, 0.85); border: 1px solid rgba(0, 0, 0, 0.1); }
     </style>
 </head>
 <body class="min-h-screen flex flex-col font-sans">
 
     <!-- Navbar -->
     <nav class="glass-panel border-b border-slate-700 p-4 sticky top-0 z-50">
-        <div class="container mx-auto flex flex-wrap justify-between items-center gap-y-4 gap-x-2">
+        <div class="container mx-auto flex justify-between items-center px-4">
             <div class="flex items-center space-x-3">
                 <i class="fa-solid fa-shield-halved text-blue-500 text-3xl"></i>
-                <h1 class="text-2xl font-bold tracking-wider text-white">BLUE<span class="text-blue-500">GUARD</span>
-                    <span class="text-sm text-slate-400 font-normal">ASSET INVENTORY</span></h1>
+                <h1 class="text-2xl font-bold tracking-wider text-white uppercase">BLUE<span class="text-blue-500">GUARD</span>
+                    <span class="text-sm text-slate-400 font-normal ml-2">ASSET INVENTORY</span>
+                </h1>
             </div>
-            
-            <div class="flex items-center gap-4">
-                <div class="space-x-6 text-sm font-medium flex items-center mr-4">
-                    <a href="/" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-chart-line mr-2"></i>Dashboard</a>
-                    <a href="/logs" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-server mr-2"></i>AI Analysis</a>
-                    <a href="/alerts" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-broadcast-tower mr-2"></i>Raw Stream</a>
-                    <a href="/reports" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-file-invoice mr-2"></i>Reports</a>
-                    <a href="/agents" class="text-blue-400 border-b-2 border-blue-500 pb-1 hover:text-white transition"><i class="fa-solid fa-network-wired mr-2"></i>Assets</a>
-                </div>
-                <button id="themeToggleBtn" class="text-slate-400 hover:text-white transition focus:outline-none p-2 rounded-full hover:bg-slate-800" title="Toggle Theme">
-                    <i id="themeIcon" class="fa-solid fa-sun text-lg"></i>
-                </button>
+            <div class="flex items-center space-x-6 text-sm font-medium">
+                <a href="/" class="text-slate-400 hover:text-white transition">Dashboard</a>
+                <a href="/logs" class="text-slate-400 hover:text-white transition">AI Logs</a>
+                <a href="/vulnerabilities" class="text-slate-400 hover:text-white transition">Vulnerabilities</a>
+                <a href="/agents" class="text-blue-400 border-b-2 border-blue-500 pb-1">Asset Inventory</a>
+                <a href="/alerts" class="text-slate-400 hover:text-white transition">Raw Stream</a>
             </div>
         </div>
     </nav>
 
-    <main class="container mx-auto p-6 flex-grow">
-        <div class="flex justify-between items-center mb-8">
-            <div>
-                <h2 class="text-3xl font-bold text-white">Infrastructure Health</h2>
-                <p class="text-slate-400 mt-1">Real-time risk monitoring for all discovered endpoints.</p>
-            </div>
-        </div>
+    <div class="flex flex-1">
+        <!-- Sidebar -->
+        <aside class="w-64 glass-panel border-r border-slate-700 h-[calc(100vh-80px)] sticky top-20 p-6 hidden lg:block">
+            <nav class="space-y-4">
+                <p class="text-xs text-slate-500 font-bold uppercase tracking-widest mb-4">Navigation</p>
+                <a href="/" class="flex items-center space-x-3 p-3 rounded-lg text-slate-400 hover:bg-slate-800 transition">
+                    <i class="fa-solid fa-chart-line"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="/vulnerabilities" class="flex items-center space-x-3 p-3 rounded-lg text-slate-400 hover:bg-slate-800 transition">
+                    <i class="fa-solid fa-bug"></i>
+                    <span>Vulnerabilities</span>
+                </a>
+                <a href="/agents" class="flex items-center space-x-3 p-3 rounded-lg bg-indigo-600 text-white shadow-lg shadow-indigo-500/20">
+                    <i class="fa-solid fa-microchip"></i>
+                    <span class="font-bold">Asset Inventory</span>
+                </a>
+            </nav>
+        </aside>
 
-        <!-- Asset Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {% for agent in agents %}
-            <div class="glass-panel p-6 rounded-2xl border-t-4 
-                {% if agent.status == 'Healthy' %} border-emerald-500 
-                {% elif agent.status == 'Warning' %} border-yellow-500 
-                {% else %} border-red-500 {% endif %} relative overflow-hidden group hover:scale-[1.02] transition">
-                
-                <div class="flex justify-between items-start mb-4">
-                    <div class="p-3 rounded-xl {% if agent.os == 'Windows' %} bg-blue-500/10 text-blue-400 {% else %} bg-orange-500/10 text-orange-400 {% endif %}">
-                        <i class="fa-brands {% if agent.os == 'Windows' %} fa-windows {% else %} fa-linux {% endif %} text-2xl"></i>
-                    </div>
-                    <div class="text-right">
-                        <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Status</span>
-                        <p class="text-sm font-bold 
-                            {% if agent.status == 'Healthy' %} text-emerald-400 
-                            {% elif agent.status == 'Warning' %} text-yellow-400 
-                            {% else %} text-red-400 {% endif %}">
-                            {{ agent.status }}
-                        </p>
-                    </div>
-                </div>
-
-                <h3 class="text-xl font-bold text-white mb-1">{{ agent.hostname }}</h3>
-                <p class="text-slate-400 text-xs font-mono mb-6">{{ agent.ip_address }}</p>
-
-                <div class="space-y-4">
-                    <div>
-                        <div class="flex justify-between items-end mb-1">
-                            <span class="text-[10px] font-bold text-slate-400 uppercase">Machine Health</span>
-                            <span class="text-sm font-bold text-white">{{ agent.health_score }}%</span>
-                        </div>
-                        <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
-                            <div class="health-bar h-full rounded-full 
-                                {% if agent.health_score > 80 %} bg-emerald-500 
-                                {% elif agent.health_score > 40 %} bg-yellow-500 
-                                {% else %} bg-red-500 {% endif %}" 
-                                style="width: {{ agent.health_score }}%"></div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-4 pt-2">
-                        <div class="bg-slate-900/50 p-2 rounded-lg text-center">
-                            <p class="text-[9px] text-slate-500 uppercase font-bold">Total Alerts</p>
-                            <p class="text-lg font-bold text-white">{{ agent.total_alerts }}</p>
-                        </div>
-                        <div class="bg-slate-900/50 p-2 rounded-lg text-center">
-                            <p class="text-[9px] text-slate-500 uppercase font-bold">Critical</p>
-                            <p class="text-lg font-bold text-red-500">{{ agent.critical_alerts }}</p>
-                        </div>
-                    </div>
-                </div>
-
-                <!-- Last Seen -->
-                <div class="mt-6 pt-4 border-t border-slate-700/50 flex justify-between items-center text-[10px] text-slate-500">
-                    <span><i class="fa-solid fa-clock mr-1"></i> Added: {{ agent.registered_at }}</span>
-                    <a href="/logs?agent={{ agent.hostname }}" class="text-blue-400 hover:underline">View Logs →</a>
+        <!-- Main Content -->
+        <main class="flex-grow p-6">
+            <div class="flex justify-between items-center mb-8">
+                <div>
+                    <h2 class="text-3xl font-bold text-white tracking-tight">Infrastructure Health</h2>
+                    <p class="text-slate-400 mt-1">Real-time risk monitoring for all discovered endpoints.</p>
                 </div>
             </div>
-            {% endfor %}
-        </div>
-    </main>
 
-    <!-- Footer Space -->
-    <div class="h-20"></div>
+            <!-- Asset Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {% for agent in agents %}
+                <div class="glass-panel p-6 rounded-2xl border-t-4 
+                    {% if agent.status == 'Healthy' %} border-emerald-500 
+                    {% elif agent.status == 'Warning' %} border-yellow-500 
+                    {% else %} border-red-500 {% endif %} relative overflow-hidden group hover:scale-[1.02] transition">
+                    
+                    <div class="flex justify-between items-start mb-4">
+                        <div class="p-3 rounded-xl {% if agent.os == 'Windows' %} bg-blue-500/10 text-blue-400 {% else %} bg-orange-500/10 text-orange-400 {% endif %}">
+                            <i class="fa-brands {% if agent.os == 'Windows' %} fa-windows {% else %} fa-linux {% endif %} text-2xl"></i>
+                        </div>
+                        <div class="text-right">
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-slate-500">Status</span>
+                            <p class="text-sm font-bold 
+                                {% if agent.status == 'Healthy' %} text-emerald-400 
+                                {% elif agent.status == 'Warning' %} text-yellow-400 
+                                {% else %} text-red-400 {% endif %}">
+                                {{ agent.status }}
+                            </p>
+                        </div>
+                    </div>
+
+                    <h3 class="text-xl font-bold text-white mb-1">{{ agent.hostname }}</h3>
+                    <p class="text-slate-400 text-xs font-mono mb-6">{{ agent.ip_address }}</p>
+
+                    <div class="space-y-4">
+                        <div>
+                            <div class="flex justify-between items-end mb-1">
+                                <span class="text-[10px] font-bold text-slate-400 uppercase">Machine Health</span>
+                                <span class="text-sm font-bold text-white">{{ agent.health_score }}%</span>
+                            </div>
+                            <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                                <div class="health-bar h-full rounded-full 
+                                    {% if agent.health_score > 80 %} bg-emerald-500 
+                                    {% elif agent.health_score > 40 %} bg-yellow-500 
+                                    {% else %} bg-red-500 {% endif %}" 
+                                    style="width: {{ agent.health_score }}%"></div>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-2 gap-4 pt-2">
+                            <div class="bg-slate-900/50 p-2 rounded-lg text-center">
+                                <p class="text-[9px] text-slate-500 uppercase font-bold">Total Alerts</p>
+                                <p class="text-lg font-bold text-white">{{ agent.total_alerts }}</p>
+                            </div>
+                            <div class="bg-slate-900/50 p-2 rounded-lg text-center">
+                                <p class="text-[9px] text-slate-500 uppercase font-bold">Risk Level</p>
+                                <p class="text-lg font-bold {% if agent.risk == 'Critical' %}text-red-500{% else %}text-emerald-500{% endif %}">
+                                    {{ agent.risk }}
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </main>
+    </div>
 
     <script>
-        // Theme Toggle Logic
-        document.addEventListener('DOMContentLoaded', () => {
-            const themeToggleBtn = document.getElementById('themeToggleBtn');
-            const themeIcon = document.getElementById('themeIcon');
-            if (localStorage.getItem('theme') === 'light') {
-                document.body.classList.add('light-mode');
-                themeIcon.classList.replace('fa-sun', 'fa-moon');
-            }
-            themeToggleBtn.addEventListener('click', () => {
-                const isNowLight = document.body.classList.toggle('light-mode');
-                if (isNowLight) {
-                    localStorage.setItem('theme', 'light');
-                    themeIcon.classList.replace('fa-sun', 'fa-moon');
-                } else {
-                    localStorage.setItem('theme', 'dark');
-                    themeIcon.classList.replace('fa-moon', 'fa-sun');
-                }
-            });
-        });
+        if (localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode');
     </script>
 </body>
 </html>

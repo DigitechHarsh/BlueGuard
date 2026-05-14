@@ -3,44 +3,20 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Raw Alert Stream</title>
+    <title>Raw Alert Stream | BlueGuard</title>
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <style>
-        body { background-color: #0f172a; color: #a1a1aa; font-family: monospace; }
+        body { background-color: #0f172a; color: #a1a1aa; font-family: monospace; transition: all 0.3s; }
         ::-webkit-scrollbar { width: 8px; }
         ::-webkit-scrollbar-track { background: #0f172a; }
         ::-webkit-scrollbar-thumb { background: #334155; border-radius: 4px; }
 
-        /* Light Mode Overrides */
         body.light-mode { background-color: #f8fafc; color: #0f172a; }
-        body.light-mode::-webkit-scrollbar-track { background: #f8fafc; }
-        body.light-mode::-webkit-scrollbar-thumb { background: #cbd5e1; }
         body.light-mode .text-white { color: #0f172a !important; }
-        body.light-mode .hover\:text-white:hover { color: #0f172a !important; }
-        body.light-mode .text-slate-400 { color: #475569 !important; }
-        body.light-mode .text-slate-300 { color: #334155 !important; }
-        body.light-mode .text-slate-500 { color: #64748b !important; }
-        body.light-mode .text-slate-600 { color: #475569 !important; }
-        body.light-mode .text-blue-400 { color: #2563eb !important; }
-        body.light-mode .text-emerald-400 { color: #059669 !important; }
-        body.light-mode .text-emerald-500 { color: #059669 !important; }
-        body.light-mode .text-red-400 { color: #dc2626 !important; }
-        body.light-mode .text-red-500 { color: #dc2626 !important; }
-        body.light-mode .text-orange-400 { color: #ea580c !important; }
-        body.light-mode .text-orange-500 { color: #ea580c !important; }
-        body.light-mode .text-yellow-400 { color: #ca8a04 !important; }
-        body.light-mode .text-yellow-500 { color: #ca8a04 !important; }
-        body.light-mode .text-cyan-400 { color: #0891b2 !important; }
-        body.light-mode .text-cyan-600 { color: #0e7490 !important; }
-        body.light-mode .text-purple-400 { color: #9333ea !important; }
-        body.light-mode .text-pink-400 { color: #db2777 !important; }
         body.light-mode .bg-slate-900 { background-color: #e2e8f0 !important; }
-        body.light-mode .bg-slate-800 { background-color: #f1f5f9 !important; }
-        body.light-mode .bg-slate-700 { background-color: #cbd5e1 !important; }
         body.light-mode .border-slate-700 { border-color: #cbd5e1 !important; }
-        body.light-mode .border-slate-800 { border-color: #cbd5e1 !important; }
-        body.light-mode .hover\:border-slate-600:hover { border-color: #94a3b8 !important; }
     </style>
 </head>
 <body class="p-4 flex flex-col h-screen">
@@ -56,16 +32,15 @@
                 <option value="{{ a }}" {% if current_filter == a %}selected{% endif %}>{{ a }}</option>
                 {% endfor %}
             </select>
-            <input type="datetime-local" name="start_time" value="{{ current_start }}" onchange="this.form.submit()" class="bg-slate-800 text-slate-300 text-xs p-1 focus:outline-none cursor-pointer border-r border-slate-600" title="Start Time">
-            <input type="datetime-local" name="end_time" value="{{ current_end }}" onchange="this.form.submit()" class="bg-slate-800 text-slate-300 text-xs p-1 focus:outline-none cursor-pointer" title="End Time">
         </form>
 
-        <div class="flex items-center space-x-3">
-            <span class="text-xs text-slate-500">Auto-refreshing 5s</span>
-            <a href="/reports" class="text-xs text-emerald-400 hover:text-white transition">[Reports]</a>
-            <a href="/" class="text-xs text-blue-400 hover:text-white transition">[Dashboard]</a>
-            <button id="themeToggleBtn" class="text-slate-400 hover:text-white transition focus:outline-none p-1 rounded-full hover:bg-slate-800 ml-2" title="Toggle Theme">
-                <i id="themeIcon" class="fa-solid fa-sun text-sm"></i>
+        <div class="flex items-center space-x-4 text-xs font-bold">
+            <a href="/" class="text-blue-400 hover:text-white transition">[Dashboard]</a>
+            <a href="/logs" class="text-slate-400 hover:text-white transition">[AI Analysis Logs]</a>
+            <a href="/vulnerabilities" class="text-slate-400 hover:text-white transition">[Vulnerabilities]</a>
+            <a href="/agents" class="text-slate-400 hover:text-white transition">[Asset Inventory]</a>
+            <button id="themeToggleBtn" class="text-slate-400 hover:text-white transition ml-2">
+                <i id="themeIcon" class="fa-solid fa-sun"></i>
             </button>
         </div>
     </div>
@@ -74,112 +49,37 @@
         {% for alert in alerts %}
             <div class="bg-slate-900 p-3 rounded border border-slate-800 hover:border-slate-600 transition flex justify-between items-center group">
                 <div class="flex-grow">
-                    <div class="flex justify-between text-xs mb-1">
+                    <div class="flex justify-between text-[10px] mb-1 font-mono">
                         <span class="text-blue-400">{{ alert.get('timestamp', 'N/A')[:19] | replace("T", " ") }}</span>
-                        
                         <div class="flex items-center space-x-2">
-                            <!-- Base Severity -->
-                            {% set base_sev = alert.get('base_severity', alert.get('severity', 'Unknown')) %}
-                            {% if base_sev == 'Critical' %}
-                                <span class="text-red-500 font-bold">[BASE: CRITICAL]</span>
-                            {% elif base_sev == 'High' %}
-                                <span class="text-orange-500 font-bold">[BASE: HIGH]</span>
-                            {% elif base_sev == 'Medium' %}
-                                <span class="text-yellow-500 font-bold">[BASE: MEDIUM]</span>
-                            {% else %}
-                                <span class="text-emerald-500 font-bold">[BASE: LOW]</span>
-                            {% endif %}
-
-                            <span class="text-cyan-400">→</span>
-
-                            <!-- Org Risk Severity -->
-                            {% set org_sev = alert.get('org_risk_severity', alert.get('severity', 'Unknown')) %}
-                            {% if org_sev == 'Critical' %}
-                                <span class="text-red-500 font-bold">[ORG: CRITICAL]</span>
-                            {% elif org_sev == 'High' %}
-                                <span class="text-orange-500 font-bold">[ORG: HIGH]</span>
-                            {% elif org_sev == 'Medium' %}
-                                <span class="text-yellow-500 font-bold">[ORG: MEDIUM]</span>
-                            {% else %}
-                                <span class="text-emerald-500 font-bold">[ORG: LOW]</span>
-                            {% endif %}
-
-                            {% if base_sev != org_sev %}
-                                <span class="text-cyan-400 font-bold text-[10px]">⬇ MITIGATED</span>
-                            {% endif %}
+                            {% set sev = alert.get('severity', 'Low') %}
+                            <span class="{% if sev == 'Critical' %}text-red-500{% elif sev == 'High' %}text-orange-500{% elif sev == 'Medium' %}text-yellow-500{% else %}text-emerald-500{% endif %} font-bold">[{{ sev | uppercase }}]</span>
                         </div>
                     </div>
-                    
-                    <div class="text-white text-sm">
+                    <div class="text-white text-sm font-mono">
                         Host: <span class="text-purple-400">{{ alert.get('agent', {}).get('name', 'Unknown') }}</span> | 
                         Type: <span class="text-pink-400">{{ alert.get('attack_type', 'Unknown') }}</span>
-                        {% if alert.get('cve_cwe', 'N/A') != 'N/A' %}
-                        | 
-                        {% for item in alert.get('cve_cwe', 'N/A').split(',') %}
-                            {% set clean_item = item.strip() %}
-                            {% if clean_item.startswith('CVE-') %}
-                                <a href="https://nvd.nist.gov/vuln/detail/{{ clean_item }}" target="_blank" class="text-red-400 font-mono hover:underline">{{ clean_item }}</a>{% if not loop.last %}, {% endif %}
-                            {% elif clean_item.startswith('CWE-') %}
-                                <a href="https://cwe.mitre.org/data/definitions/{{ clean_item.split('-')[1] }}.html" target="_blank" class="text-orange-400 font-mono hover:underline">{{ clean_item }}</a>{% if not loop.last %}, {% endif %}
-                            {% else %}
-                                <span class="text-slate-400 font-mono">{{ clean_item }}</span>{% if not loop.last %}, {% endif %}
-                            {% endif %}
-                        {% endfor %}
-                        {% endif %}
-                        {% if alert.get('cvss_score', 'N/A') != 'N/A' %}
-                        | <span class="text-yellow-400">CVSS: {{ alert.get('cvss_score') }}</span>
-                        {% endif %}
                     </div>
-                    
-                    <div class="text-xs text-slate-500 mt-1 truncate">
+                    <div class="text-[10px] text-slate-500 mt-1 truncate">
                         CMD: {{ alert.get('rule', {}).get('description', 'N/A') }}
                     </div>
-                    {% if alert.get('org_risk_assessment', 'N/A') != 'N/A' %}
-                    <div class="text-xs text-cyan-600 mt-1 truncate" title="{{ alert.get('org_risk_assessment') }}">
-                        <i class="fa-solid fa-building-shield mr-1"></i>{{ alert.get('org_risk_assessment', '')[:120] }}...
-                    </div>
-                    {% endif %}
                 </div>
-
-                </div>
+            </div>
         {% else %}
             <div class="text-center text-slate-600 mt-10">
-                Listening for incoming post requests...
+                Listening for incoming telemetry...
             </div>
         {% endfor %}
     </div>
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <script>
-        // Check local storage and apply theme immediately before full page load
-        if (localStorage.getItem('theme') === 'light') {
-            document.body.classList.add('light-mode');
-        }
-
-        setTimeout(function() { 
-            location.reload(); 
-        }, 5000);
-
-        // Theme Toggle Logic
-        document.addEventListener('DOMContentLoaded', () => {
-            const themeToggleBtn = document.getElementById('themeToggleBtn');
-            const themeIcon = document.getElementById('themeIcon');
-            
-            if (localStorage.getItem('theme') === 'light') {
-                themeIcon.classList.replace('fa-sun', 'fa-moon');
-            }
-
-            themeToggleBtn.addEventListener('click', () => {
-                document.body.classList.toggle('light-mode');
-                if (document.body.classList.contains('light-mode')) {
-                    localStorage.setItem('theme', 'light');
-                    themeIcon.classList.replace('fa-sun', 'fa-moon');
-                } else {
-                    localStorage.setItem('theme', 'dark');
-                    themeIcon.classList.replace('fa-moon', 'fa-sun');
-                }
-            });
+        document.getElementById('themeToggleBtn').addEventListener('click', () => {
+            const isLight = document.body.classList.toggle('light-mode');
+            localStorage.setItem('theme', isLight ? 'light' : 'dark');
         });
+        if (localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode');
+        
+        setTimeout(() => { if (!document.hidden) location.reload(); }, 5000);
     </script>
 </body>
 </html>

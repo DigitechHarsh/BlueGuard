@@ -1,9 +1,12 @@
+import os
+from dotenv import load_dotenv
 from pymongo import MongoClient
+load_dotenv()
 
 def clear_dashboard():
     try:
-        print("Connecting to MongoDB...")
-        client = MongoClient("mongodb://localhost:27017/", serverSelectionTimeoutMS=5000)
+        print("Connecting to MongoDB Atlas...")
+        client = MongoClient(os.getenv("MONGO_URI", "mongodb://localhost:27017/"), serverSelectionTimeoutMS=10000)
         db = client.blueguard_db
         
         # Count before deletion
