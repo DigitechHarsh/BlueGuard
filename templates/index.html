@@ -10,10 +10,13 @@
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <!-- FontAwesome for Icons -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         body {
             background-color: #0f172a;
             color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
         }
 
         .glass-panel {
@@ -45,32 +48,96 @@
             background-color: #f8fafc;
             color: #0f172a;
         }
+
         body.light-mode .glass-panel {
             background: rgba(255, 255, 255, 0.85);
             border: 1px solid rgba(0, 0, 0, 0.1);
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
-        body.light-mode .text-white:not(.bg-indigo-600) { color: #0f172a !important; }
-        body.light-mode .hover\:text-white:hover { color: #0f172a !important; }
-        body.light-mode .text-slate-400 { color: #475569 !important; }
-        body.light-mode .text-slate-300 { color: #334155 !important; }
-        body.light-mode .text-slate-500 { color: #64748b !important; }
-        body.light-mode .text-blue-400 { color: #2563eb !important; }
-        body.light-mode .text-emerald-400 { color: #059669 !important; }
-        body.light-mode .text-red-400 { color: #dc2626 !important; }
-        body.light-mode .text-orange-400 { color: #ea580c !important; }
-        body.light-mode .text-yellow-400 { color: #ca8a04 !important; }
-        body.light-mode .text-cyan-400 { color: #0891b2 !important; }
-        body.light-mode .bg-slate-900 { background-color: #e2e8f0 !important; }
-        body.light-mode .bg-slate-800 { background-color: #f1f5f9 !important; }
-        body.light-mode .bg-slate-800\/50 { background-color: rgba(241, 245, 249, 0.8) !important; }
-        body.light-mode .bg-slate-800\/80 { background-color: rgba(241, 245, 249, 0.9) !important; }
-        body.light-mode .bg-slate-800\/30 { background-color: rgba(241, 245, 249, 0.5) !important; }
-        body.light-mode .bg-slate-700 { background-color: #cbd5e1 !important; }
-        body.light-mode .border-slate-700 { border-color: #cbd5e1 !important; }
-        body.light-mode .border-slate-600 { border-color: #94a3b8 !important; }
-        body.light-mode .hover\:bg-slate-800\/50:hover { background-color: #e2e8f0 !important; }
-        body.light-mode .hover\:bg-slate-800:hover { background-color: #e2e8f0 !important; }
+
+        body.light-mode .text-white:not(.bg-indigo-600) {
+            color: #0f172a !important;
+        }
+
+        body.light-mode .hover\:text-white:hover {
+            color: #0f172a !important;
+        }
+
+        body.light-mode .text-slate-400 {
+            color: #475569 !important;
+        }
+
+        body.light-mode .text-slate-300 {
+            color: #334155 !important;
+        }
+
+        body.light-mode .text-slate-500 {
+            color: #64748b !important;
+        }
+
+        body.light-mode .text-blue-400 {
+            color: #2563eb !important;
+        }
+
+        body.light-mode .text-emerald-400 {
+            color: #059669 !important;
+        }
+
+        body.light-mode .text-red-400 {
+            color: #dc2626 !important;
+        }
+
+        body.light-mode .text-orange-400 {
+            color: #ea580c !important;
+        }
+
+        body.light-mode .text-yellow-400 {
+            color: #ca8a04 !important;
+        }
+
+        body.light-mode .text-cyan-400 {
+            color: #0891b2 !important;
+        }
+
+        body.light-mode .bg-slate-900 {
+            background-color: #e2e8f0 !important;
+        }
+
+        body.light-mode .bg-slate-800 {
+            background-color: #f1f5f9 !important;
+        }
+
+        body.light-mode .bg-slate-800\/50 {
+            background-color: rgba(241, 245, 249, 0.8) !important;
+        }
+
+        body.light-mode .bg-slate-800\/80 {
+            background-color: rgba(241, 245, 249, 0.9) !important;
+        }
+
+        body.light-mode .bg-slate-800\/30 {
+            background-color: rgba(241, 245, 249, 0.5) !important;
+        }
+
+        body.light-mode .bg-slate-700 {
+            background-color: #cbd5e1 !important;
+        }
+
+        body.light-mode .border-slate-700 {
+            border-color: #cbd5e1 !important;
+        }
+
+        body.light-mode .border-slate-600 {
+            border-color: #94a3b8 !important;
+        }
+
+        body.light-mode .hover\:bg-slate-800\/50:hover {
+            background-color: #e2e8f0 !important;
+        }
+
+        body.light-mode .hover\:bg-slate-800:hover {
+            background-color: #e2e8f0 !important;
+        }
     </style>
 </head>
 
@@ -82,36 +149,54 @@
             <div class="flex items-center space-x-3">
                 <i class="fa-solid fa-shield-halved text-blue-500 text-3xl"></i>
                 <h1 class="text-2xl font-bold tracking-wider text-white">BLUE<span class="text-blue-500">GUARD</span>
-                    <span class="text-sm text-slate-400 font-normal">AI SOC PLATFORM</span></h1>
+                    <span class="text-sm text-slate-400 font-normal">AI SOC PLATFORM</span>
+                </h1>
             </div>
-            
+
             <div class="flex items-center gap-4">
-                <form action="/" method="GET" class="flex items-center bg-slate-900 border border-slate-700 rounded overflow-hidden">
-                    <span class="px-3 text-slate-400 text-xs font-bold uppercase"><i class="fa-solid fa-filter mr-1"></i> Filter:</span>
-                    <select name="agent" onchange="this.form.submit()" class="bg-slate-800 text-white text-sm focus:outline-none p-2 py-1 cursor-pointer border-l border-r border-slate-700">
-                        <option value="All" {% if current_filter == 'All' %}selected{% endif %}>All Agents</option>
+                <form action="/" method="GET"
+                    class="flex items-center bg-slate-900 border border-slate-700 rounded overflow-hidden">
+                    <span class="px-3 text-slate-400 text-xs font-bold uppercase"><i
+                            class="fa-solid fa-filter mr-1"></i> Filter:</span>
+                    <select name="agent" onchange="this.form.submit()"
+                        class="bg-slate-800 text-white text-sm focus:outline-none p-2 py-1 cursor-pointer border-l border-r border-slate-700">
+                        <option value="All" {% if current_filter=='All' %}selected{% endif %}>All Agents</option>
                         {% for a in available_agents %}
-                        <option value="{{ a }}" {% if current_filter == a %}selected{% endif %}>{{ a }}</option>
+                        <option value="{{ a }}" {% if current_filter==a %}selected{% endif %}>{{ a }}</option>
                         {% endfor %}
                     </select>
-                    <input type="datetime-local" name="start_time" value="{{ current_start }}" onchange="this.form.submit()" class="bg-slate-800 text-white text-xs p-2 py-1 focus:outline-none cursor-pointer border-r border-slate-700" title="Start Time">
-                    <input type="datetime-local" name="end_time" value="{{ current_end }}" onchange="this.form.submit()" class="bg-slate-800 text-white text-xs p-2 py-1 focus:outline-none cursor-pointer" title="End Time">
+                    <input type="datetime-local" name="start_time" value="{{ current_start }}"
+                        onchange="this.form.submit()"
+                        class="bg-slate-800 text-white text-xs p-2 py-1 focus:outline-none cursor-pointer border-r border-slate-700"
+                        title="Start Time">
+                    <input type="datetime-local" name="end_time" value="{{ current_end }}" onchange="this.form.submit()"
+                        class="bg-slate-800 text-white text-xs p-2 py-1 focus:outline-none cursor-pointer"
+                        title="End Time">
                 </form>
-                
-                <a href="/export_csv?agent={{ current_filter }}&start_time={{ current_start }}&end_time={{ current_end }}" class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-2 px-3 rounded flex items-center transition border border-indigo-500">
+
+                <a href="/export_csv?agent={{ current_filter }}&start_time={{ current_start }}&end_time={{ current_end }}"
+                    class="bg-indigo-600 hover:bg-indigo-500 text-white text-xs font-bold py-2 px-3 rounded flex items-center transition border border-indigo-500">
                     <i class="fa-solid fa-file-csv mr-2"></i> Export Report
                 </a>
             </div>
 
             <div class="space-x-6 text-sm font-medium flex items-center">
-                <a href="/" class="text-blue-400 border-b-2 border-blue-500 pb-1 hover:text-white transition"><i class="fa-solid fa-chart-line mr-2"></i>Dashboard</a>
-                <a href="/logs" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-server mr-2"></i>AI Analysis Logs</a>
-                <a href="/vulnerabilities" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-bug mr-2"></i>Vulnerabilities</a>
-                <a href="/reports" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-file-invoice mr-2"></i>Security Reports</a>
-                <a href="/agents" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-network-wired mr-2"></i>Asset Inventory</a>
-                <a href="/alerts" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-list mr-2"></i>Raw Stream</a>
-                
-                <button id="themeToggleBtn" class="text-slate-400 hover:text-white transition focus:outline-none p-2 rounded-full hover:bg-slate-800 ml-4 border-l border-slate-700 pl-4" title="Toggle Theme">
+                <a href="/" class="text-blue-400 border-b-2 border-blue-500 pb-1 hover:text-white transition"><i
+                        class="fa-solid fa-chart-line mr-2"></i>Dashboard</a>
+                <a href="/logs" class="text-slate-400 hover:text-white transition"><i
+                        class="fa-solid fa-server mr-2"></i>AI Analysis Logs</a>
+                <a href="/vulnerabilities" class="text-slate-400 hover:text-white transition"><i
+                        class="fa-solid fa-bug mr-2"></i>Vulnerabilities</a>
+                <a href="/reports" class="text-slate-400 hover:text-white transition"><i
+                        class="fa-solid fa-file-invoice mr-2"></i>Security Reports</a>
+                <a href="/agents" class="text-slate-400 hover:text-white transition"><i
+                        class="fa-solid fa-network-wired mr-2"></i>Asset Inventory</a>
+                <a href="/alerts" class="text-slate-400 hover:text-white transition"><i
+                        class="fa-solid fa-list mr-2"></i>Raw Stream</a>
+
+                <button id="themeToggleBtn"
+                    class="text-slate-400 hover:text-white transition focus:outline-none p-2 rounded-full hover:bg-slate-800 ml-4 border-l border-slate-700 pl-4"
+                    title="Toggle Theme">
                     <i id="themeIcon" class="fa-solid fa-sun text-lg"></i>
                 </button>
             </div>
@@ -126,7 +211,8 @@
             <div class="glass-panel p-6 rounded-xl flex items-center justify-between">
                 <div>
                     <p class="text-slate-400 text-sm font-semibold uppercase tracking-wider">Total Alerts Detected</p>
-                    <h2 class="text-4xl font-bold text-white mt-1">{{ stats.get('total', 0) if stats else alerts|length }}</h2>
+                    <h2 class="text-4xl font-bold text-white mt-1">{{ stats.get('total', 0) if stats else alerts|length
+                        }}</h2>
                 </div>
                 <div class="p-3 bg-blue-500/20 text-blue-500 rounded-lg">
                     <i class="fa-solid fa-satellite-dish text-2xl"></i>
@@ -137,7 +223,8 @@
                 <div>
                     <p class="text-slate-400 text-sm font-semibold uppercase tracking-wider">Critical Threats</p>
                     <h2 class="text-4xl font-bold text-red-500 mt-1">
-                        {{ stats.get('critical', 0) if stats else (alerts | selectattr("severity", "equalto", "Critical") | list | length) }}
+                        {{ stats.get('critical', 0) if stats else (alerts | selectattr("severity", "equalto",
+                        "Critical") | list | length) }}
                     </h2>
                 </div>
                 <div class="p-3 bg-red-500/20 text-red-500 rounded-lg pulse-red">
@@ -149,7 +236,8 @@
                 <div>
                     <p class="text-slate-400 text-sm font-semibold uppercase tracking-wider">High Threats</p>
                     <h2 class="text-4xl font-bold text-orange-500 mt-1">
-                        {{ stats.get('high', 0) if stats else (alerts | selectattr("severity", "equalto", "High") | list | length) }}
+                        {{ stats.get('high', 0) if stats else (alerts | selectattr("severity", "equalto", "High") | list
+                        | length) }}
                     </h2>
                 </div>
                 <div class="p-3 bg-orange-500/20 text-orange-500 rounded-lg">
@@ -189,13 +277,12 @@
                 </div>
             </div>
         </div>
-        
+
 
         <!-- Latest Alerts Table -->
         <div class="glass-panel rounded-xl overflow-hidden shadow-2xl">
             <div class="p-6 border-b border-slate-700 flex justify-between items-center bg-slate-800/50">
-                <h3 class="text-xl font-semibold text-white"><i class="fa-solid fa-bolt text-yellow-500 mr-2"></i>Live
-                    Threat Stream</h3>
+                <h3 class="text-xl font-semibold text-white">Live Threat Stream</h3>
                 <span
                     class="px-3 py-1 bg-blue-500/20 text-blue-400 text-xs rounded-full border border-blue-500/30">Auto-updating...</span>
             </div>
@@ -203,7 +290,8 @@
             <div class="overflow-x-auto">
                 <table class="w-full text-left border-collapse">
                     <thead>
-                        <tr class="bg-slate-700/40 text-[10px] uppercase tracking-widest font-black text-slate-400 border-b border-slate-700">
+                        <tr
+                            class="bg-slate-700/40 text-[10px] uppercase tracking-widest font-black text-slate-400 border-b border-slate-700">
                             <th class="p-4">Timestamp</th>
                             <th class="p-4">Agent Info</th>
                             <th class="p-4">Source IP</th>
@@ -219,20 +307,23 @@
                     </thead>
                     <tbody class="divide-y divide-slate-700/30">
                         {% for alert in alerts %}
-                        <tr class="hover:bg-slate-700/20 transition-all border-b border-slate-700/30 cursor-pointer group" 
+                        <tr class="hover:bg-slate-700/20 transition-all border-b border-slate-700/30 cursor-pointer group"
                             onclick="openAnalysisModal('{{ alert._id }}', '{{ alert.get('attack_type', 'N/A') }}', '{{ alert.get('cve_id', 'N/A') }}', '{{ alert.get('cwe_id', 'N/A') }}', '{{ alert.get('remediation', 'N/A')|replace('\n', '\\n')|replace('\'', '\\\'') }}', '{{ alert.get('analysis', 'N/A')|replace('\n', '\\n')|replace('\'', '\\\'') }}', '{{ alert.get('org_risk_assessment', 'N/A')|replace('\n', '\\n')|replace('\'', '\\\'') }}')">
                             <td class="p-4 text-xs text-slate-400">
                                 {{ alert.get('timestamp', 'N/A')[:19].replace('T', ' ') }}
                             </td>
                             <td class="p-4">
-                                <div class="font-bold text-white text-xs">{{ alert.get('agent', {}).get('name', 'Unknown') }}</div>
-                                <div class="text-[9px] text-slate-500 uppercase">{{ alert.get('agent', {}).get('role', 'N/A') }}</div>
+                                <div class="font-bold text-white text-xs">{{ alert.get('agent', {}).get('name',
+                                    'Unknown') }}</div>
+                                <div class="text-[9px] text-slate-500 uppercase">{{ alert.get('agent', {}).get('role',
+                                    'N/A') }}</div>
                             </td>
                             <td class="p-4 font-mono text-[10px] text-slate-300">
                                 {{ alert.get('agent', {}).get('ip', 'N/A') }}
                             </td>
                             <td class="p-4">
-                                <span class="px-2 py-1 rounded bg-cyan-500/10 text-cyan-400 font-bold text-[10px] border border-cyan-500/20">
+                                <span
+                                    class="px-2 py-1 rounded bg-cyan-500/10 text-cyan-400 font-bold text-[10px] border border-cyan-500/20">
                                     {{ alert.get('attack_type', 'Analyzing...') }}
                                 </span>
                                 <div class="text-[9px] text-slate-500 mt-1 italic max-w-[150px] truncate">
@@ -240,46 +331,47 @@
                                 </div>
                             </td>
                             <!-- CVE ID -->
-                             <td class="p-4">
+                            <td class="p-4">
                                 {% if alert.get('cve_id') and alert.get('cve_id') != 'N/A' %}
-                                    <div class="flex flex-wrap gap-1">
-                                        {% for cve in alert.get('cve_id').split(',') %}
-                                            {% set cve_clean = cve.strip() %}
-                                            {% if cve_clean and cve_clean != 'N/A' %}
-                                            <a href="https://nvd.nist.gov/vuln/detail/{{ cve_clean }}" target="_blank" 
-                                               class="text-[9px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20 font-black hover:bg-red-500/30 transition">
-                                                {{ cve_clean }}
-                                            </a>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </div>
+                                <div class="flex flex-wrap gap-1">
+                                    {% for cve in alert.get('cve_id').split(',') %}
+                                    {% set cve_clean = cve.strip() %}
+                                    {% if cve_clean and cve_clean != 'N/A' %}
+                                    <a href="https://nvd.nist.gov/vuln/detail/{{ cve_clean }}" target="_blank"
+                                        class="text-[9px] px-1.5 py-0.5 rounded bg-red-500/10 text-red-400 border border-red-500/20 font-black hover:bg-red-500/30 transition">
+                                        {{ cve_clean }}
+                                    </a>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
                                 {% else %}
-                                    <span class="text-[9px] text-slate-600 italic">N/A</span>
+                                <span class="text-[9px] text-slate-600 italic">N/A</span>
                                 {% endif %}
                             </td>
                             <!-- CWE ID -->
-                             <td class="p-4">
+                            <td class="p-4">
                                 {% if alert.get('cwe_id') and alert.get('cwe_id') != 'N/A' %}
-                                    <div class="flex flex-wrap gap-1">
-                                        {% for cwe in alert.get('cwe_id').split(',') %}
-                                            {% set cwe_clean = cwe.strip() %}
-                                            {% if cwe_clean and cwe_clean != 'N/A' %}
-                                            {% set cwe_num = cwe_clean.split('-')[-1] if '-' in cwe_clean else cwe_clean %}
-                                            <a href="https://cwe.mitre.org/data/definitions/{{ cwe_num }}.html" target="_blank" 
-                                               class="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-black hover:bg-blue-500/30 transition">
-                                                {{ cwe_clean }}
-                                            </a>
-                                            {% endif %}
-                                        {% endfor %}
-                                    </div>
+                                <div class="flex flex-wrap gap-1">
+                                    {% for cwe in alert.get('cwe_id').split(',') %}
+                                    {% set cwe_clean = cwe.strip() %}
+                                    {% if cwe_clean and cwe_clean != 'N/A' %}
+                                    {% set cwe_num = cwe_clean.split('-')[-1] if '-' in cwe_clean else cwe_clean %}
+                                    <a href="https://cwe.mitre.org/data/definitions/{{ cwe_num }}.html" target="_blank"
+                                        class="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-black hover:bg-blue-500/30 transition">
+                                        {{ cwe_clean }}
+                                    </a>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
                                 {% else %}
-                                    <span class="text-[9px] text-slate-600 italic">N/A</span>
+                                <span class="text-[9px] text-slate-600 italic">N/A</span>
                                 {% endif %}
                             </td>
                             <!-- CVSS -->
                             <td class="p-4 text-center">
                                 {% set score = alert.get('cvss_score', 0)|float %}
-                                <span class="font-black text-xs {% if score >= 9.0 %}text-red-500{% elif score >= 7.0 %}text-orange-500{% elif score >= 4.0 %}text-yellow-500{% else %}text-emerald-500{% endif %}">
+                                <span
+                                    class="font-black text-xs {% if score >= 9.0 %}text-red-500{% elif score >= 7.0 %}text-orange-500{% elif score >= 4.0 %}text-yellow-500{% else %}text-emerald-500{% endif %}">
                                     {{ "%.1f"|format(score) }}
                                 </span>
                             </td>
@@ -299,12 +391,14 @@
                             <td class="p-4">
                                 {% set m_id = alert.get('mitre_technique', 'N/A') %}
                                 {% if m_id != 'N/A' %}
-                                <a href="https://attack.mitre.org/techniques/{{ m_id.replace('.', '/') if '.' in m_id else m_id }}/" target="_blank" 
-                                   class="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono font-bold hover:bg-blue-500/20 transition">
+                                <a href="https://attack.mitre.org/techniques/{{ m_id.replace('.', '/') if '.' in m_id else m_id }}/"
+                                    target="_blank"
+                                    class="text-[10px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-mono font-bold hover:bg-blue-500/20 transition">
                                     {{ m_id }}
                                 </a>
                                 {% else %}
-                                <span class="text-[10px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 border border-slate-600 font-mono">
+                                <span
+                                    class="text-[10px] px-1.5 py-0.5 rounded bg-slate-700 text-slate-300 border border-slate-600 font-mono">
                                     {{ m_id }}
                                 </span>
                                 {% endif %}
@@ -316,30 +410,51 @@
                             <td class="p-4">
                                 {% set base_sev = alert.get('base_severity', alert.get('severity', 'Unknown')) %}
                                 {% if base_sev == 'Critical' %}
-                                <span class="flex items-center text-red-500 font-bold bg-red-500/10 px-2 py-1 rounded-full w-max text-xs"><i class="fa-solid fa-circle-exclamation mr-1 text-[10px]"></i> Critical</span>
+                                <span
+                                    class="flex items-center text-red-500 font-bold bg-red-500/10 px-2 py-1 rounded-full w-max text-xs"><i
+                                        class="fa-solid fa-circle-exclamation mr-1 text-[10px]"></i> Critical</span>
                                 {% elif base_sev == 'High' %}
-                                <span class="flex items-center text-orange-500 font-bold bg-orange-500/10 px-2 py-1 rounded-full w-max text-xs"><i class="fa-solid fa-triangle-exclamation mr-1 text-[10px]"></i> High</span>
+                                <span
+                                    class="flex items-center text-orange-500 font-bold bg-orange-500/10 px-2 py-1 rounded-full w-max text-xs"><i
+                                        class="fa-solid fa-triangle-exclamation mr-1 text-[10px]"></i> High</span>
                                 {% elif base_sev == 'Medium' %}
-                                <span class="flex items-center text-yellow-500 font-bold bg-yellow-500/10 px-2 py-1 rounded-full w-max text-xs"><i class="fa-solid fa-minus-circle mr-1 text-[10px]"></i> Medium</span>
+                                <span
+                                    class="flex items-center text-yellow-500 font-bold bg-yellow-500/10 px-2 py-1 rounded-full w-max text-xs"><i
+                                        class="fa-solid fa-minus-circle mr-1 text-[10px]"></i> Medium</span>
                                 {% else %}
-                                <span class="flex items-center text-emerald-500 font-bold bg-emerald-500/10 px-2 py-1 rounded-full w-max text-xs"><i class="fa-solid fa-check-circle mr-1 text-[10px]"></i> Low</span>
+                                <span
+                                    class="flex items-center text-emerald-500 font-bold bg-emerald-500/10 px-2 py-1 rounded-full w-max text-xs"><i
+                                        class="fa-solid fa-check-circle mr-1 text-[10px]"></i> Low</span>
                                 {% endif %}
                             </td>
                             <!-- Org Risk Severity (Adjusted) -->
                             <td class="p-4 relative">
                                 {% set org_sev = alert.get('org_risk_severity', alert.get('severity', 'Unknown')) %}
                                 {% if org_sev == 'Critical' %}
-                                <span class="flex items-center text-red-500 font-bold bg-red-500/10 px-2 py-1 rounded-full w-max text-xs cursor-help" title="{{ alert.get('org_risk_assessment', 'No assessment') }}"><i class="fa-solid fa-building-shield mr-1 text-[10px]"></i> Critical</span>
+                                <span
+                                    class="flex items-center text-red-500 font-bold bg-red-500/10 px-2 py-1 rounded-full w-max text-xs cursor-help"
+                                    title="{{ alert.get('org_risk_assessment', 'No assessment') }}"><i
+                                        class="fa-solid fa-building-shield mr-1 text-[10px]"></i> Critical</span>
                                 {% elif org_sev == 'High' %}
-                                <span class="flex items-center text-orange-500 font-bold bg-orange-500/10 px-2 py-1 rounded-full w-max text-xs cursor-help" title="{{ alert.get('org_risk_assessment', 'No assessment') }}"><i class="fa-solid fa-building-shield mr-1 text-[10px]"></i> High</span>
+                                <span
+                                    class="flex items-center text-orange-500 font-bold bg-orange-500/10 px-2 py-1 rounded-full w-max text-xs cursor-help"
+                                    title="{{ alert.get('org_risk_assessment', 'No assessment') }}"><i
+                                        class="fa-solid fa-building-shield mr-1 text-[10px]"></i> High</span>
                                 {% elif org_sev == 'Medium' %}
-                                <span class="flex items-center text-yellow-500 font-bold bg-yellow-500/10 px-2 py-1 rounded-full w-max text-xs cursor-help" title="{{ alert.get('org_risk_assessment', 'No assessment') }}"><i class="fa-solid fa-building-shield mr-1 text-[10px]"></i> Medium</span>
+                                <span
+                                    class="flex items-center text-yellow-500 font-bold bg-yellow-500/10 px-2 py-1 rounded-full w-max text-xs cursor-help"
+                                    title="{{ alert.get('org_risk_assessment', 'No assessment') }}"><i
+                                        class="fa-solid fa-building-shield mr-1 text-[10px]"></i> Medium</span>
                                 {% else %}
-                                <span class="flex items-center text-emerald-500 font-bold bg-emerald-500/10 px-2 py-1 rounded-full w-max text-xs cursor-help" title="{{ alert.get('org_risk_assessment', 'No assessment') }}"><i class="fa-solid fa-building-shield mr-1 text-[10px]"></i> Low</span>
+                                <span
+                                    class="flex items-center text-emerald-500 font-bold bg-emerald-500/10 px-2 py-1 rounded-full w-max text-xs cursor-help"
+                                    title="{{ alert.get('org_risk_assessment', 'No assessment') }}"><i
+                                        class="fa-solid fa-building-shield mr-1 text-[10px]"></i> Low</span>
                                 {% endif %}
                                 <!-- Arrow showing risk change -->
                                 {% if base_sev != org_sev %}
-                                <div class="text-[9px] text-cyan-400 mt-0.5 font-bold"><i class="fa-solid fa-arrow-down mr-0.5"></i>Mitigated</div>
+                                <div class="text-[9px] text-cyan-400 mt-0.5 font-bold"><i
+                                        class="fa-solid fa-arrow-down mr-0.5"></i>Mitigated</div>
                                 {% endif %}
                             </td>
 
@@ -358,32 +473,35 @@
             <!-- Pro Pagination Footer -->
             <div class="px-6 py-4 bg-slate-900/50 border-t border-slate-700/50 flex justify-between items-center">
                 <div class="text-[10px] font-black uppercase tracking-widest text-slate-500">
-                    Showing Page <span class="text-cyan-400">{{ page }}</span> / <span class="text-white">{{ total_pages if total_pages > 0 else 1 }}</span>
+                    Showing Page <span class="text-cyan-400">{{ page }}</span> / <span class="text-white">{{ total_pages
+                        if total_pages > 0 else 1 }}</span>
                 </div>
                 <div class="flex items-center space-x-2">
                     {% if page > 1 %}
-                    <a href="/?page={{ page - 1 }}&agent={{ current_filter }}&start_time={{ current_start }}&end_time={{ current_end }}" 
-                       class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-black rounded border border-slate-700 transition uppercase tracking-widest">
-                       <i class="fa-solid fa-chevron-left mr-1"></i> Prev
+                    <a href="/?page={{ page - 1 }}&agent={{ current_filter }}&start_time={{ current_start }}&end_time={{ current_end }}"
+                        class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-black rounded border border-slate-700 transition uppercase tracking-widest">
+                        <i class="fa-solid fa-chevron-left mr-1"></i> Prev
                     </a>
                     {% else %}
-                    <span class="px-4 py-1.5 bg-slate-900/50 text-slate-700 text-[10px] font-black rounded border border-slate-800 cursor-not-allowed uppercase tracking-widest">
-                       <i class="fa-solid fa-chevron-left mr-1"></i> Prev
+                    <span
+                        class="px-4 py-1.5 bg-slate-900/50 text-slate-700 text-[10px] font-black rounded border border-slate-800 cursor-not-allowed uppercase tracking-widest">
+                        <i class="fa-solid fa-chevron-left mr-1"></i> Prev
                     </span>
                     {% endif %}
 
                     <div class="h-4 w-[1px] bg-slate-700 mx-2"></div>
 
-                    {% if page < total_pages %}
-                    <a href="/?page={{ page + 1 }}&agent={{ current_filter }}&start_time={{ current_start }}&end_time={{ current_end }}" 
-                       class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-black rounded border border-slate-700 transition uppercase tracking-widest">
-                       Next <i class="fa-solid fa-chevron-right ml-1"></i>
-                    </a>
-                    {% else %}
-                    <span class="px-4 py-1.5 bg-slate-900/50 text-slate-700 text-[10px] font-black rounded border border-slate-800 cursor-not-allowed uppercase tracking-widest">
-                       Next <i class="fa-solid fa-chevron-right ml-1"></i>
-                    </span>
-                    {% endif %}
+                    {% if page < total_pages %} <a
+                        href="/?page={{ page + 1 }}&agent={{ current_filter }}&start_time={{ current_start }}&end_time={{ current_end }}"
+                        class="px-4 py-1.5 bg-slate-800 hover:bg-slate-700 text-white text-[10px] font-black rounded border border-slate-700 transition uppercase tracking-widest">
+                        Next <i class="fa-solid fa-chevron-right ml-1"></i>
+                        </a>
+                        {% else %}
+                        <span
+                            class="px-4 py-1.5 bg-slate-900/50 text-slate-700 text-[10px] font-black rounded border border-slate-800 cursor-not-allowed uppercase tracking-widest">
+                            Next <i class="fa-solid fa-chevron-right ml-1"></i>
+                        </span>
+                        {% endif %}
                 </div>
             </div>
         </div>
@@ -410,7 +528,7 @@
             const textColor = isLight ? '#1e293b' : '#e2e8f0';
             const gridColor = isLight ? 'rgba(0, 0, 0, 0.05)' : 'rgba(255, 255, 255, 0.05)';
             const tickColor = isLight ? '#475569' : '#94a3b8';
-            
+
             Chart.instances.forEach((chart, index) => {
                 if (chart.options.plugins && chart.options.plugins.legend) {
                     chart.options.plugins.legend.labels.color = textColor;
@@ -430,7 +548,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             const themeToggleBtn = document.getElementById('themeToggleBtn');
             const themeIcon = document.getElementById('themeIcon');
-            
+
             // Check for saved theme
             if (localStorage.getItem('theme') === 'light') {
                 document.body.classList.add('light-mode');
@@ -440,7 +558,7 @@
 
             themeToggleBtn.addEventListener('click', () => {
                 const isNowLight = document.body.classList.toggle('light-mode');
-                
+
                 if (isNowLight) {
                     localStorage.setItem('theme', 'light');
                     themeIcon.classList.replace('fa-sun', 'fa-moon');
@@ -454,82 +572,83 @@
     </script>
 
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
-            const chartData = {{ chart_data | tojson | safe }};
-            
-            if (chartData && chartData.severities_labels && chartData.severities_labels.length > 0) {
-                // --- Severity Doughnut Chart ---
-                const sevCtx = document.getElementById('severityChart').getContext('2d');
-                const severityColors = chartData.severities_labels.map(label => {
-                    if(label === 'Critical') return 'rgba(239, 68, 68, 0.8)';
-                    if(label === 'High') return 'rgba(249, 115, 22, 0.8)';
-                    if(label === 'Medium') return 'rgba(234, 179, 8, 0.8)';
-                    if(label === 'Low') return 'rgba(16, 185, 129, 0.8)';
-                    return 'rgba(100, 116, 139, 0.8)';
-                });
+        document.addEventListener('DOMContentLoaded', function () {
+            const chartData = {{ chart_data | tojson | safe
+        }};
 
-                new Chart(sevCtx, {
-                    type: 'doughnut',
-                    data: {
-                        labels: chartData.severities_labels,
-                        datasets: [{
-                            data: chartData.severities_data,
-                            backgroundColor: severityColors,
-                            borderColor: 'rgba(30, 41, 59, 1)',
-                            borderWidth: 2,
-                            hoverOffset: 8
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        plugins: {
-                            legend: {
-                                position: 'right',
-                                labels: { color: '#e2e8f0', font: { family: 'Inter, sans-serif', weight: 'bold' } }
-                            }
+        if (chartData && chartData.severities_labels && chartData.severities_labels.length > 0) {
+            // --- Severity Doughnut Chart ---
+            const sevCtx = document.getElementById('severityChart').getContext('2d');
+            const severityColors = chartData.severities_labels.map(label => {
+                if (label === 'Critical') return 'rgba(239, 68, 68, 0.8)';
+                if (label === 'High') return 'rgba(249, 115, 22, 0.8)';
+                if (label === 'Medium') return 'rgba(234, 179, 8, 0.8)';
+                if (label === 'Low') return 'rgba(16, 185, 129, 0.8)';
+                return 'rgba(100, 116, 139, 0.8)';
+            });
+
+            new Chart(sevCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: chartData.severities_labels,
+                    datasets: [{
+                        data: chartData.severities_data,
+                        backgroundColor: severityColors,
+                        borderColor: 'rgba(30, 41, 59, 1)',
+                        borderWidth: 2,
+                        hoverOffset: 8
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'right',
+                            labels: { color: '#e2e8f0', font: { family: 'Inter, sans-serif', weight: 'bold' } }
                         }
                     }
-                });
-            }
+                }
+            });
+        }
 
-            if (chartData && chartData.agent_labels && chartData.agent_labels.length > 0) {
-                // --- Top Targeted Assets Chart ---
-                const agentCtx = document.getElementById('agentChart').getContext('2d');
-                new Chart(agentCtx, {
-                    type: 'bar',
-                    data: {
-                        labels: chartData.agent_labels,
-                        datasets: [{
-                            label: 'Incidents per Asset',
-                            data: chartData.agent_data,
-                            backgroundColor: 'rgba(56, 189, 248, 0.6)', 
-                            borderColor: 'rgba(56, 189, 248, 1)',
-                            borderWidth: 1,
-                            borderRadius: 6
-                        }]
-                    },
-                    options: {
-                        responsive: true,
-                        maintainAspectRatio: false,
-                        indexAxis: 'y',
-                        scales: {
-                            x: {
-                                beginAtZero: true,
-                                ticks: { color: '#94a3b8' },
-                                grid: { color: 'rgba(255, 255, 255, 0.05)' }
-                            },
-                            y: {
-                                ticks: { color: '#94a3b8' },
-                                grid: { display: false }
-                            }
+        if (chartData && chartData.agent_labels && chartData.agent_labels.length > 0) {
+            // --- Top Targeted Assets Chart ---
+            const agentCtx = document.getElementById('agentChart').getContext('2d');
+            new Chart(agentCtx, {
+                type: 'bar',
+                data: {
+                    labels: chartData.agent_labels,
+                    datasets: [{
+                        label: 'Incidents per Asset',
+                        data: chartData.agent_data,
+                        backgroundColor: 'rgba(56, 189, 248, 0.6)',
+                        borderColor: 'rgba(56, 189, 248, 1)',
+                        borderWidth: 1,
+                        borderRadius: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    indexAxis: 'y',
+                    scales: {
+                        x: {
+                            beginAtZero: true,
+                            ticks: { color: '#94a3b8' },
+                            grid: { color: 'rgba(255, 255, 255, 0.05)' }
                         },
-                        plugins: {
-                            legend: { display: false }
+                        y: {
+                            ticks: { color: '#94a3b8' },
+                            grid: { display: false }
                         }
+                    },
+                    plugins: {
+                        legend: { display: false }
                     }
-                });
-            }
+                }
+            });
+        }
         });
     </script>
 
@@ -542,10 +661,13 @@
                 <!-- Modal Header -->
                 <div class="px-8 py-6 border-b border-slate-700/50 flex justify-between items-center bg-slate-900/50">
                     <div>
-                        <h3 id="modalTitle" class="text-2xl font-black text-white tracking-tight">Intelligence Analysis</h3>
-                        <p id="modalSub" class="text-cyan-400 text-[10px] font-black uppercase tracking-[0.2em] mt-1">Advanced Threat Forensic Report</p>
+                        <h3 id="modalTitle" class="text-2xl font-black text-white tracking-tight">Intelligence Analysis
+                        </h3>
+                        <p id="modalSub" class="text-cyan-400 text-[10px] font-black uppercase tracking-[0.2em] mt-1">
+                            Advanced Threat Forensic Report</p>
                     </div>
-                    <button onclick="closeAnalysisModal()" class="text-slate-500 hover:text-white transition p-2 hover:bg-slate-800 rounded-full">
+                    <button onclick="closeAnalysisModal()"
+                        class="text-slate-500 hover:text-white transition p-2 hover:bg-slate-800 rounded-full">
                         <i class="fa-solid fa-xmark text-xl"></i>
                     </button>
                 </div>
@@ -556,7 +678,8 @@
                         <!-- Left Column: Details -->
                         <div class="space-y-8">
                             <div class="glass-panel p-6">
-                                <h4 class="text-red-400 font-black text-[10px] uppercase tracking-[0.2em] mb-4 flex items-center">
+                                <h4
+                                    class="text-red-400 font-black text-[10px] uppercase tracking-[0.2em] mb-4 flex items-center">
                                     <i class="fa-solid fa-bug mr-2"></i> CVE Identifier
                                 </h4>
                                 <div id="modalCveContainer" class="flex flex-wrap gap-2">
@@ -564,7 +687,8 @@
                                 </div>
                             </div>
                             <div class="glass-panel p-6">
-                                <h4 class="text-cyan-400 font-black text-[10px] uppercase tracking-[0.2em] mb-4 flex items-center">
+                                <h4
+                                    class="text-cyan-400 font-black text-[10px] uppercase tracking-[0.2em] mb-4 flex items-center">
                                     <i class="fa-solid fa-shield-virus mr-2"></i> CWE Weakness
                                 </h4>
                                 <div id="modalCweContainer" class="flex flex-wrap gap-2">
@@ -572,7 +696,8 @@
                                 </div>
                             </div>
                             <div class="glass-panel p-6">
-                                <h4 class="text-slate-400 font-black text-[10px] uppercase tracking-[0.2em] mb-4 flex items-center">
+                                <h4
+                                    class="text-slate-400 font-black text-[10px] uppercase tracking-[0.2em] mb-4 flex items-center">
                                     <i class="fa-solid fa-building-shield mr-2"></i> Org Impact Assessment
                                 </h4>
                                 <p id="modalImpact" class="text-slate-300 text-sm leading-relaxed italic"></p>
@@ -581,7 +706,8 @@
 
                         <!-- Right Column: Remediation -->
                         <div class="space-y-4">
-                            <h4 class="text-emerald-400 font-black text-[10px] uppercase tracking-[0.2em] mb-2 flex items-center">
+                            <h4
+                                class="text-emerald-400 font-black text-[10px] uppercase tracking-[0.2em] mb-2 flex items-center">
                                 <i class="fa-solid fa-screwdriver-wrench mr-2"></i> Step-by-Step Remediation
                             </h4>
                             <div id="modalRemediationContainer" class="space-y-4">
@@ -593,7 +719,9 @@
 
                 <!-- Modal Footer -->
                 <div class="px-8 py-4 bg-slate-900/50 border-t border-slate-700/50 flex justify-end">
-                    <button onclick="closeAnalysisModal()" class="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white font-black text-[10px] uppercase tracking-widest rounded-lg border border-slate-700 transition">Close Report</button>
+                    <button onclick="closeAnalysisModal()"
+                        class="px-6 py-2 bg-slate-800 hover:bg-slate-700 text-white font-black text-[10px] uppercase tracking-widest rounded-lg border border-slate-700 transition">Close
+                        Report</button>
                 </div>
             </div>
         </div>
@@ -607,7 +735,7 @@
             // --- CVE Multi-Badge Engine ---
             const cveContainer = document.getElementById('modalCveContainer');
             cveContainer.innerHTML = ''; // Clear previous contents
-            
+
             if (cve && cve !== 'N/A' && cve.trim() !== '') {
                 // Split by comma and trim each ID
                 const cveArray = cve.split(',').map(s => s.trim()).filter(s => s !== '');
@@ -627,7 +755,7 @@
             // --- CWE Multi-Badge Engine ---
             const cweContainer = document.getElementById('modalCweContainer');
             cweContainer.innerHTML = ''; // Clear previous contents
-            
+
             if (cwe && cwe !== 'N/A' && cwe.trim() !== '') {
                 const cweArray = cwe.split(',').map(s => s.trim()).filter(s => s !== '');
                 cweArray.forEach(id => {
@@ -649,7 +777,7 @@
             const steps = remediation.split('\\n');
             let counter = 1;
             steps.forEach(step => {
-                const cleanStep = step.trim().replace(/^\d+\.\s*/, ''); 
+                const cleanStep = step.trim().replace(/^\d+\.\s*/, '');
                 if (cleanStep) {
                     remContainer.innerHTML += `
                         <div class="flex items-start gap-4 p-4 bg-slate-800/30 border border-slate-700/50 rounded-xl hover:border-cyan-500/30 transition-colors">

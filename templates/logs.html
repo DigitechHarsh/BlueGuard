@@ -1,6 +1,5 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -8,10 +7,13 @@
     <!-- Tailwind CSS CDN -->
     <script src="https://cdn.tailwindcss.com"></script>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Google Fonts: Inter -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet">
     <style>
         body {
             background-color: #0f172a;
             color: #e2e8f0;
+            font-family: 'Inter', sans-serif;
         }
 
         .glass-panel {
@@ -25,46 +27,152 @@
             background-color: #f8fafc;
             color: #0f172a;
         }
+
         body.light-mode .glass-panel {
             background: rgba(255, 255, 255, 0.85);
             border: 1px solid rgba(0, 0, 0, 0.1);
             box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
         }
-        body.light-mode .text-white:not(.bg-indigo-600, .bg-blue-600) { color: #0f172a !important; }
-        body.light-mode .hover\:text-white:hover { color: #0f172a !important; }
-        body.light-mode .text-slate-400 { color: #475569 !important; }
-        body.light-mode .text-slate-300 { color: #334155 !important; }
-        body.light-mode .text-slate-500 { color: #64748b !important; }
-        body.light-mode .text-blue-400 { color: #2563eb !important; }
-        body.light-mode .text-emerald-400 { color: #059669 !important; }
-        body.light-mode .text-red-400 { color: #dc2626 !important; }
-        body.light-mode .text-orange-400 { color: #ea580c !important; }
-        body.light-mode .text-yellow-400 { color: #ca8a04 !important; }
-        body.light-mode .text-cyan-400 { color: #0891b2 !important; }
-        body.light-mode .text-purple-400 { color: #9333ea !important; }
-        body.light-mode .text-blue-100 { color: #1e3a8a !important; }
-        body.light-mode .text-red-100 { color: #7f1d1d !important; }
-        body.light-mode .text-red-300 { color: #b91c1c !important; }
-        body.light-mode .text-orange-300 { color: #c2410c !important; }
-        body.light-mode .text-yellow-300 { color: #a16207 !important; }
-        body.light-mode .text-emerald-300 { color: #047857 !important; }
-        body.light-mode .text-purple-100 { color: #581c87 !important; }
-        body.light-mode .text-cyan-100 { color: #164e63 !important; }
-        body.light-mode .text-emerald-100 { color: #064e3b !important; }
-        body.light-mode .bg-slate-900 { background-color: #e2e8f0 !important; }
-        body.light-mode .bg-slate-800 { background-color: #f1f5f9 !important; }
-        body.light-mode .bg-slate-800\/80 { background-color: rgba(241, 245, 249, 0.9) !important; }
-        body.light-mode .bg-slate-700 { background-color: #cbd5e1 !important; }
-        body.light-mode .border-slate-700 { border-color: #cbd5e1 !important; }
-        body.light-mode .border-slate-800 { border-color: #cbd5e1 !important; }
-        body.light-mode .hover\:bg-slate-700:hover { background-color: #cbd5e1 !important; }
-        body.light-mode .bg-blue-900\/20 { background-color: rgba(59, 130, 246, 0.1) !important; }
-        body.light-mode .bg-red-900\/20 { background-color: rgba(239, 68, 68, 0.1) !important; }
-        body.light-mode .bg-purple-900\/20 { background-color: rgba(168, 85, 247, 0.1) !important; }
-        body.light-mode .bg-cyan-900\/20 { background-color: rgba(6, 182, 212, 0.1) !important; }
-        body.light-mode .bg-emerald-900\/20 { background-color: rgba(16, 185, 129, 0.1) !important; }
-        body.light-mode .bg-red-500\/10 { background-color: rgba(239, 68, 68, 0.1) !important; }
-        body.light-mode .bg-orange-500\/10 { background-color: rgba(249, 115, 22, 0.1) !important; }
+
+        body.light-mode .text-white:not(.bg-indigo-600, .bg-blue-600) {
+            color: #0f172a !important;
+        }
+
+        body.light-mode .hover\:text-white:hover {
+            color: #0f172a !important;
+        }
+
+        body.light-mode .text-slate-400 {
+            color: #475569 !important;
+        }
+
+        body.light-mode .text-slate-300 {
+            color: #334155 !important;
+        }
+
+        body.light-mode .text-slate-500 {
+            color: #64748b !important;
+        }
+
+        body.light-mode .text-blue-400 {
+            color: #2563eb !important;
+        }
+
+        body.light-mode .text-emerald-400 {
+            color: #059669 !important;
+        }
+
+        body.light-mode .text-red-400 {
+            color: #dc2626 !important;
+        }
+
+        body.light-mode .text-orange-400 {
+            color: #ea580c !important;
+        }
+
+        body.light-mode .text-yellow-400 {
+            color: #ca8a04 !important;
+        }
+
+        body.light-mode .text-cyan-400 {
+            color: #0891b2 !important;
+        }
+
+        body.light-mode .text-purple-400 {
+            color: #9333ea !important;
+        }
+
+        body.light-mode .text-blue-100 {
+            color: #1e3a8a !important;
+        }
+
+        body.light-mode .text-red-100 {
+            color: #7f1d1d !important;
+        }
+
+        body.light-mode .text-red-300 {
+            color: #b91c1c !important;
+        }
+
+        body.light-mode .text-orange-300 {
+            color: #c2410c !important;
+        }
+
+        body.light-mode .text-yellow-300 {
+            color: #a16207 !important;
+        }
+
+        body.light-mode .text-emerald-300 {
+            color: #047857 !important;
+        }
+
+        body.light-mode .text-purple-100 {
+            color: #581c87 !important;
+        }
+
+        body.light-mode .text-cyan-100 {
+            color: #164e63 !important;
+        }
+
+        body.light-mode .text-emerald-100 {
+            color: #064e3b !important;
+        }
+
+        body.light-mode .bg-slate-900 {
+            background-color: #e2e8f0 !important;
+        }
+
+        body.light-mode .bg-slate-800 {
+            background-color: #f1f5f9 !important;
+        }
+
+        body.light-mode .bg-slate-800\/80 {
+            background-color: rgba(241, 245, 249, 0.9) !important;
+        }
+
+        body.light-mode .bg-slate-700 {
+            background-color: #cbd5e1 !important;
+        }
+
+        body.light-mode .border-slate-700 {
+            border-color: #cbd5e1 !important;
+        }
+
+        body.light-mode .border-slate-800 {
+            border-color: #cbd5e1 !important;
+        }
+
+        body.light-mode .hover\:bg-slate-700:hover {
+            background-color: #cbd5e1 !important;
+        }
+
+        body.light-mode .bg-blue-900\/20 {
+            background-color: rgba(59, 130, 246, 0.1) !important;
+        }
+
+        body.light-mode .bg-red-900\/20 {
+            background-color: rgba(239, 68, 68, 0.1) !important;
+        }
+
+        body.light-mode .bg-purple-900\/20 {
+            background-color: rgba(168, 85, 247, 0.1) !important;
+        }
+
+        body.light-mode .bg-cyan-900\/20 {
+            background-color: rgba(6, 182, 212, 0.1) !important;
+        }
+
+        body.light-mode .bg-emerald-900\/20 {
+            background-color: rgba(16, 185, 129, 0.1) !important;
+        }
+
+        body.light-mode .bg-red-500\/10 {
+            background-color: rgba(239, 68, 68, 0.1) !important;
+        }
+
+        body.light-mode .bg-orange-500\/10 {
+            background-color: rgba(249, 115, 22, 0.1) !important;
+        }
     </style>
 </head>
 
@@ -76,32 +184,49 @@
             <div class="flex items-center space-x-3">
                 <i class="fa-solid fa-shield-halved text-blue-500 text-3xl"></i>
                 <h1 class="text-2xl font-bold tracking-wider text-white">BLUE<span class="text-blue-500">GUARD</span>
-                    <span class="text-sm text-slate-400 font-normal">AI SOC PLATFORM</span></h1>
+                    <span class="text-sm text-slate-400 font-normal">AI SOC PLATFORM</span>
+                </h1>
             </div>
-            
+
             <div class="flex items-center gap-4">
-                <form action="/logs" method="GET" class="flex items-center bg-slate-900 border border-slate-700 rounded overflow-hidden">
-                    <span class="px-3 text-slate-400 text-xs font-bold uppercase"><i class="fa-solid fa-filter mr-1"></i> Filter:</span>
-                    <select name="agent" onchange="this.form.submit()" class="bg-slate-800 text-white text-sm focus:outline-none p-2 py-1 cursor-pointer border-l border-r border-slate-700">
-                        <option value="All" {% if current_filter == 'All' %}selected{% endif %}>All Agents</option>
+                <form action="/logs" method="GET"
+                    class="flex items-center bg-slate-900 border border-slate-700 rounded overflow-hidden">
+                    <span class="px-3 text-slate-400 text-xs font-bold uppercase"><i
+                            class="fa-solid fa-filter mr-1"></i> Filter:</span>
+                    <select name="agent" onchange="this.form.submit()"
+                        class="bg-slate-800 text-white text-sm focus:outline-none p-2 py-1 cursor-pointer border-l border-r border-slate-700">
+                        <option value="All" {% if current_filter=='All' %}selected{% endif %}>All Agents</option>
                         {% for a in available_agents %}
-                        <option value="{{ a }}" {% if current_filter == a %}selected{% endif %}>{{ a }}</option>
+                        <option value="{{ a }}" {% if current_filter==a %}selected{% endif %}>{{ a }}</option>
                         {% endfor %}
                     </select>
-                    <input type="datetime-local" name="start_time" value="{{ current_start }}" onchange="this.form.submit()" class="bg-slate-800 text-white text-xs p-2 py-1 focus:outline-none cursor-pointer border-r border-slate-700" title="Start Time">
-                    <input type="datetime-local" name="end_time" value="{{ current_end }}" onchange="this.form.submit()" class="bg-slate-800 text-white text-xs p-2 py-1 focus:outline-none cursor-pointer" title="End Time">
+                    <input type="datetime-local" name="start_time" value="{{ current_start }}"
+                        onchange="this.form.submit()"
+                        class="bg-slate-800 text-white text-xs p-2 py-1 focus:outline-none cursor-pointer border-r border-slate-700"
+                        title="Start Time">
+                    <input type="datetime-local" name="end_time" value="{{ current_end }}" onchange="this.form.submit()"
+                        class="bg-slate-800 text-white text-xs p-2 py-1 focus:outline-none cursor-pointer"
+                        title="End Time">
                 </form>
             </div>
 
             <div class="space-x-6 text-sm font-medium flex items-center">
-                <a href="/" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-chart-line mr-2"></i>Dashboard</a>
-                <a href="/logs" class="text-blue-400 border-b-2 border-blue-500 pb-1 hover:text-white transition"><i class="fa-solid fa-server mr-2"></i>AI Analysis Logs</a>
-                <a href="/vulnerabilities" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-bug mr-2"></i>Vulnerabilities</a>
-                <a href="/reports" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-file-invoice mr-2"></i>Security Reports</a>
-                <a href="/agents" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-network-wired mr-2"></i>Asset Inventory</a>
-                <a href="/alerts" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-list mr-2"></i>Raw Stream</a>
-                
-                <button id="themeToggleBtn" class="text-slate-400 hover:text-white transition focus:outline-none p-2 rounded-full hover:bg-slate-800 ml-4 border-l border-slate-700 pl-4" title="Toggle Theme">
+                <a href="/" class="text-slate-400 hover:text-white transition"><i
+                        class="fa-solid fa-chart-line mr-2"></i>Dashboard</a>
+                <a href="/logs" class="text-blue-400 border-b-2 border-blue-500 pb-1 hover:text-white transition"><i
+                        class="fa-solid fa-server mr-2"></i>AI Analysis Logs</a>
+                <a href="/vulnerabilities" class="text-slate-400 hover:text-white transition"><i
+                        class="fa-solid fa-bug mr-2"></i>Vulnerabilities</a>
+                <a href="/reports" class="text-slate-400 hover:text-white transition"><i
+                        class="fa-solid fa-file-invoice mr-2"></i>Security Reports</a>
+                <a href="/agents" class="text-slate-400 hover:text-white transition"><i
+                        class="fa-solid fa-network-wired mr-2"></i>Asset Inventory</a>
+                <a href="/alerts" class="text-slate-400 hover:text-white transition"><i
+                        class="fa-solid fa-list mr-2"></i>Raw Stream</a>
+
+                <button id="themeToggleBtn"
+                    class="text-slate-400 hover:text-white transition focus:outline-none p-2 rounded-full hover:bg-slate-800 ml-4 border-l border-slate-700 pl-4"
+                    title="Toggle Theme">
                     <i id="themeIcon" class="fa-solid fa-sun text-lg"></i>
                 </button>
             </div>
@@ -110,8 +235,7 @@
 
     <!-- Main Content -->
     <main class="container mx-auto p-6 flex-grow">
-        <h2 class="text-2xl font-bold mb-6 text-white"><i class="fa-solid fa-robot text-blue-500 mr-2"></i> Detailed AI
-            Threat Analysis</h2>
+        <h2 class="text-2xl font-bold mb-6 text-white">Detailed AI Threat Analysis</h2>
 
         <div class="space-y-6">
             {% for alert in alerts %}
@@ -128,13 +252,15 @@
                         <span class="px-3 py-1 bg-slate-700 text-white rounded text-xs font-semibold">{{
                             alert.get('attack_type', 'Unknown Attack') }}</span>
                         {% if alert.get('count', 1) > 1 %}
-                        <span class="px-3 py-1 bg-red-500/20 border border-red-500/50 text-red-500 rounded-full text-xs font-bold shadow-[0_0_10px_rgba(239,68,68,0.3)] animate-pulse">
+                        <span
+                            class="px-3 py-1 bg-red-500/20 border border-red-500/50 text-red-500 rounded-full text-xs font-bold shadow-[0_0_10px_rgba(239,68,68,0.3)] animate-pulse">
                             🔥 {{ alert.get('count') }} ATTEMPTS DETECTED
                         </span>
                         {% endif %}
                     </div>
                     <span class="font-mono text-blue-400 text-sm">
-                        <i class="fa-solid fa-desktop mr-1"></i> {{ alert.get('agent', {}).get('name', 'Unknown Agent') }}
+                        <i class="fa-solid fa-desktop mr-1"></i> {{ alert.get('agent', {}).get('name', 'Unknown Agent')
+                        }}
                         {% if alert.get('agent', {}).get('ip') %}
                         <span class="text-slate-500 text-xs ml-1">({{ alert.get('agent', {}).get('ip') }})</span>
                         {% endif %}
@@ -178,48 +304,60 @@
 
                         <!-- CVE/CWE & CVSS Section -->
                         <div>
-                            <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Vulnerability Intelligence</h4>
+                            <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Vulnerability
+                                Intelligence</h4>
                             <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                                <div class="bg-slate-900/50 border border-slate-700 rounded-lg p-4 flex flex-col justify-between">
-                                    <span class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-3 block"><i class="fa-solid fa-bug mr-2 text-red-400"></i>CVE Identifier</span>
+                                <div
+                                    class="bg-slate-900/50 border border-slate-700 rounded-lg p-4 flex flex-col justify-between">
+                                    <span
+                                        class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-3 block"><i
+                                            class="fa-solid fa-bug mr-2 text-red-400"></i>CVE Identifier</span>
                                     <div class="flex flex-wrap gap-2">
                                         {% if alert.get('cve_id') and alert.get('cve_id') != 'N/A' %}
-                                            {% for id in alert.get('cve_id').split(',') %}
-                                                {% set clean_id = id.strip() %}
-                                                {% if clean_id and clean_id != 'N/A' %}
-                                                <a href="https://nvd.nist.gov/vuln/detail/{{ clean_id }}" 
-                                                   target="_blank" class="px-2 py-1 rounded bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition text-[10px] font-mono font-bold">
-                                                    {{ clean_id }}
-                                                </a>
-                                                {% endif %}
-                                            {% endfor %}
+                                        {% for id in alert.get('cve_id').split(',') %}
+                                        {% set clean_id = id.strip() %}
+                                        {% if clean_id and clean_id != 'N/A' %}
+                                        <a href="https://nvd.nist.gov/vuln/detail/{{ clean_id }}" target="_blank"
+                                            class="px-2 py-1 rounded bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/20 transition text-[10px] font-mono font-bold">
+                                            {{ clean_id }}
+                                        </a>
+                                        {% endif %}
+                                        {% endfor %}
                                         {% else %}
-                                            <span class="text-slate-600 italic text-[10px]">No CVE detected</span>
+                                        <span class="text-slate-600 italic text-[10px]">No CVE detected</span>
                                         {% endif %}
                                     </div>
                                 </div>
-                                <div class="bg-slate-900/50 border border-slate-700 rounded-lg p-4 flex flex-col justify-between">
-                                    <span class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-3 block"><i class="fa-solid fa-shield-virus mr-2 text-blue-400"></i>CWE Weakness</span>
+                                <div
+                                    class="bg-slate-900/50 border border-slate-700 rounded-lg p-4 flex flex-col justify-between">
+                                    <span
+                                        class="text-slate-400 text-[10px] font-bold uppercase tracking-widest mb-3 block"><i
+                                            class="fa-solid fa-shield-virus mr-2 text-blue-400"></i>CWE Weakness</span>
                                     <div class="flex flex-wrap gap-2">
                                         {% if alert.get('cwe_id') and alert.get('cwe_id') != 'N/A' %}
-                                            {% for id in alert.get('cwe_id').split(',') %}
-                                                {% set clean_id = id.strip() %}
-                                                {% if clean_id and clean_id != 'N/A' %}
-                                                {% set cwe_num = clean_id.split('-')[-1] if '-' in clean_id else clean_id %}
-                                                <a href="https://cwe.mitre.org/data/definitions/{{ cwe_num }}.html" 
-                                                   target="_blank" class="px-2 py-1 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition text-[10px] font-mono font-bold">
-                                                    {{ clean_id }}
-                                                </a>
-                                                {% endif %}
-                                            {% endfor %}
+                                        {% for id in alert.get('cwe_id').split(',') %}
+                                        {% set clean_id = id.strip() %}
+                                        {% if clean_id and clean_id != 'N/A' %}
+                                        {% set cwe_num = clean_id.split('-')[-1] if '-' in clean_id else clean_id %}
+                                        <a href="https://cwe.mitre.org/data/definitions/{{ cwe_num }}.html"
+                                            target="_blank"
+                                            class="px-2 py-1 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/20 transition text-[10px] font-mono font-bold">
+                                            {{ clean_id }}
+                                        </a>
+                                        {% endif %}
+                                        {% endfor %}
                                         {% else %}
-                                            <span class="text-slate-600 italic text-[10px]">Generic Weakness</span>
+                                        <span class="text-slate-600 italic text-[10px]">Generic Weakness</span>
                                         {% endif %}
                                     </div>
                                 </div>
-                                <div class="bg-slate-900/50 border border-slate-700 rounded-lg p-4 flex flex-col justify-between">
+                                <div
+                                    class="bg-slate-900/50 border border-slate-700 rounded-lg p-4 flex flex-col justify-between">
                                     <div class="flex justify-between items-start">
-                                        <span class="text-slate-400 text-[10px] font-bold uppercase tracking-widest block"><i class="fa-solid fa-gauge-high mr-2 text-yellow-400"></i>CVSS Score</span>
+                                        <span
+                                            class="text-slate-400 text-[10px] font-bold uppercase tracking-widest block"><i
+                                                class="fa-solid fa-gauge-high mr-2 text-yellow-400"></i>CVSS
+                                            Score</span>
                                         {% set cvss = alert.get('cvss_score', '0') %}
                                         <span class="px-3 py-1 rounded font-black text-xl 
                                             {% if cvss != 'N/A' and cvss|float >= 9.0 %} text-red-500 bg-red-500/10
@@ -231,20 +369,26 @@
                                         </span>
                                     </div>
                                     <div class="flex justify-between items-center mt-2 border-t border-slate-800 pt-2">
-                                        <span class="text-slate-500 text-[10px] font-bold uppercase">CWSS Intelligence</span>
-                                        <span class="text-blue-400 font-black text-sm">{{ alert.get('cwss_score', '0') }} / 100</span>
+                                        <span class="text-slate-500 text-[10px] font-bold uppercase">CWSS
+                                            Intelligence</span>
+                                        <span class="text-blue-400 font-black text-sm">{{ alert.get('cwss_score', '0')
+                                            }} / 100</span>
                                     </div>
                                     <div class="flex items-center space-x-4 mt-2">
                                         <div class="flex items-center">
                                             <span class="text-[9px] text-slate-500 uppercase mr-2">Base:</span>
                                             {% set base_sev = alert.get('base_severity', 'Low') %}
-                                            <span class="text-[10px] font-bold {% if base_sev == 'Critical' %}text-red-500{% elif base_sev == 'High' %}text-orange-500{% elif base_sev == 'Medium' %}text-yellow-500{% else %}text-emerald-500{% endif %}">{{ base_sev }}</span>
+                                            <span
+                                                class="text-[10px] font-bold {% if base_sev == 'Critical' %}text-red-500{% elif base_sev == 'High' %}text-orange-500{% elif base_sev == 'Medium' %}text-yellow-500{% else %}text-emerald-500{% endif %}">{{
+                                                base_sev }}</span>
                                         </div>
                                         <i class="fa-solid fa-arrow-right text-slate-600 text-[10px]"></i>
                                         <div class="flex items-center">
                                             <span class="text-[9px] text-slate-500 uppercase mr-2">Org:</span>
                                             {% set org_sev = alert.get('severity', 'Low') %}
-                                            <span class="text-[10px] font-bold {% if org_sev == 'Critical' %}text-red-500{% elif org_sev == 'High' %}text-orange-500{% elif org_sev == 'Medium' %}text-yellow-500{% else %}text-emerald-500{% endif %}">{{ org_sev }}</span>
+                                            <span
+                                                class="text-[10px] font-bold {% if org_sev == 'Critical' %}text-red-500{% elif org_sev == 'High' %}text-orange-500{% elif org_sev == 'Medium' %}text-yellow-500{% else %}text-emerald-500{% endif %}">{{
+                                                org_sev }}</span>
                                         </div>
                                     </div>
                                 </div>
@@ -256,15 +400,21 @@
                 <!-- MITRE & Risk Assessment -->
                 <div class="p-6 pt-0 grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
-                        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">MITRE ATT&CK Mapping</h4>
-                        <div class="bg-purple-900/10 border border-purple-500/20 rounded-lg p-4 flex flex-col space-y-2">
-                            <p class="text-sm"><span class="text-purple-400 font-bold mr-2">Tactic:</span> <span class="text-slate-300">{{ alert.get('mitre_tactic', 'N/A') }}</span></p>
-                            <p class="text-sm"><span class="text-purple-400 font-bold mr-2">Technique:</span> <span class="text-slate-300">{{ alert.get('mitre_technique', 'N/A') }}</span></p>
+                        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">MITRE ATT&CK Mapping
+                        </h4>
+                        <div
+                            class="bg-purple-900/10 border border-purple-500/20 rounded-lg p-4 flex flex-col space-y-2">
+                            <p class="text-sm"><span class="text-purple-400 font-bold mr-2">Tactic:</span> <span
+                                    class="text-slate-300">{{ alert.get('mitre_tactic', 'N/A') }}</span></p>
+                            <p class="text-sm"><span class="text-purple-400 font-bold mr-2">Technique:</span> <span
+                                    class="text-slate-300">{{ alert.get('mitre_technique', 'N/A') }}</span></p>
                         </div>
                     </div>
                     <div>
-                        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Organizational Risk Assessment</h4>
-                        <div class="bg-emerald-900/10 border border-emerald-500/20 rounded-lg p-4 text-sm text-slate-300 leading-relaxed italic">
+                        <h4 class="text-xs font-bold text-slate-500 uppercase tracking-wider mb-2">Organizational Risk
+                            Assessment</h4>
+                        <div
+                            class="bg-emerald-900/10 border border-emerald-500/20 rounded-lg p-4 text-sm text-slate-300 leading-relaxed italic">
                             <i class="fa-solid fa-shield-check text-emerald-400 mr-2"></i>
                             {{ alert.get('org_risk_assessment', 'No assessment available.') }}
                         </div>
@@ -277,25 +427,27 @@
                     <div class="bg-blue-900/10 border border-blue-500/20 rounded-lg p-4">
                         <ul class="space-y-2">
                             {% if alert.get('remediation') is string and '[' in alert.get('remediation') %}
-                                {# Handle cases where it might be a string representation of a list #}
-                                {% for step in alert.get('remediation').replace('[', '').replace(']', '').replace("'", "").split(',') %}
-                                    <li class="flex items-start text-sm text-slate-300">
-                                        <i class="fa-solid fa-wrench text-blue-400 mr-3 mt-1"></i>
-                                        <span>{{ step.strip() }}</span>
-                                    </li>
-                                {% endfor %}
+                            {# Handle cases where it might be a string representation of a list #}
+                            {% for step in alert.get('remediation').replace('[', '').replace(']', '').replace("'",
+                            "").split(',') %}
+                            <li class="flex items-start text-sm text-slate-300">
+                                <i class="fa-solid fa-wrench text-blue-400 mr-3 mt-1"></i>
+                                <span>{{ step.strip() }}</span>
+                            </li>
+                            {% endfor %}
                             {% elif alert.get('remediation') is iterable and alert.get('remediation') is not string %}
-                                {% for step in alert.get('remediation') %}
-                                    <li class="flex items-start text-sm text-slate-300">
-                                        <i class="fa-solid fa-wrench text-blue-400 mr-3 mt-1"></i>
-                                        <span>{{ step }}</span>
-                                    </li>
-                                {% endfor %}
+                            {% for step in alert.get('remediation') %}
+                            <li class="flex items-start text-sm text-slate-300">
+                                <i class="fa-solid fa-wrench text-blue-400 mr-3 mt-1"></i>
+                                <span>{{ step }}</span>
+                            </li>
+                            {% endfor %}
                             {% else %}
-                                <li class="flex items-start text-sm text-slate-300">
-                                    <i class="fa-solid fa-wrench text-blue-400 mr-3 mt-1"></i>
-                                    <span>{{ alert.get('remediation', 'Follow standard incident response protocols.') }}</span>
-                                </li>
+                            <li class="flex items-start text-sm text-slate-300">
+                                <i class="fa-solid fa-wrench text-blue-400 mr-3 mt-1"></i>
+                                <span>{{ alert.get('remediation', 'Follow standard incident response protocols.')
+                                    }}</span>
+                            </li>
                             {% endif %}
                         </ul>
                     </div>
@@ -307,28 +459,33 @@
         <!-- Pagination Footer -->
         <div class="mt-8 p-4 glass-panel rounded-xl flex justify-between items-center text-sm shadow-xl">
             <div class="text-slate-400">
-                Analysis Page <span class="text-blue-400 font-bold">{{ page }}</span> of <span class="text-white font-bold">{{ total_pages if total_pages > 0 else 1 }}</span>
+                Analysis Page <span class="text-blue-400 font-bold">{{ page }}</span> of <span
+                    class="text-white font-bold">{{ total_pages if total_pages > 0 else 1 }}</span>
             </div>
             <div class="flex space-x-2">
                 {% if page > 1 %}
-                <a href="/logs?page={{ page - 1 }}&agent={{ current_filter }}&start_time={{ current_start }}&end_time={{ current_end }}" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition border border-slate-700">
+                <a href="/logs?page={{ page - 1 }}&agent={{ current_filter }}&start_time={{ current_start }}&end_time={{ current_end }}"
+                    class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-white rounded-lg transition border border-slate-700">
                     <i class="fa-solid fa-chevron-left mr-2"></i>Previous
                 </a>
                 {% else %}
-                <span class="px-4 py-2 bg-slate-900 text-slate-600 rounded-lg cursor-not-allowed border border-slate-800">
+                <span
+                    class="px-4 py-2 bg-slate-900 text-slate-600 rounded-lg cursor-not-allowed border border-slate-800">
                     <i class="fa-solid fa-chevron-left mr-2"></i>Previous
                 </span>
                 {% endif %}
 
-                {% if page < total_pages %}
-                <a href="/logs?page={{ page + 1 }}&agent={{ current_filter }}&start_time={{ current_start }}&end_time={{ current_end }}" class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition shadow-[0_0_15px_rgba(37,99,235,0.3)]">
+                {% if page < total_pages %} <a
+                    href="/logs?page={{ page + 1 }}&agent={{ current_filter }}&start_time={{ current_start }}&end_time={{ current_end }}"
+                    class="px-4 py-2 bg-blue-600 hover:bg-blue-500 text-white rounded-lg transition shadow-[0_0_15px_rgba(37,99,235,0.3)]">
                     Next<i class="fa-solid fa-chevron-right ml-2"></i>
-                </a>
-                {% else %}
-                <span class="px-4 py-2 bg-slate-900 text-slate-600 rounded-lg cursor-not-allowed border border-slate-800">
-                    Next<i class="fa-solid fa-chevron-right ml-2"></i>
-                </span>
-                {% endif %}
+                    </a>
+                    {% else %}
+                    <span
+                        class="px-4 py-2 bg-slate-900 text-slate-600 rounded-lg cursor-not-allowed border border-slate-800">
+                        Next<i class="fa-solid fa-chevron-right ml-2"></i>
+                    </span>
+                    {% endif %}
             </div>
         </div>
     </main>
@@ -343,7 +500,7 @@
         document.addEventListener('DOMContentLoaded', () => {
             const themeToggleBtn = document.getElementById('themeToggleBtn');
             const themeIcon = document.getElementById('themeIcon');
-            
+
             if (localStorage.getItem('theme') === 'light') {
                 themeIcon.classList.replace('fa-sun', 'fa-moon');
             }
@@ -361,4 +518,5 @@
         });
     </script>
 </body>
+
 </html>
