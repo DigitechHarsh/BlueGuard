@@ -357,26 +357,51 @@ def agents():
         )
         return redirect("/agents")
 
-    # Ultra-Robust Discovery: Scan all alerts using multiple common field paths
-    all_alerts = list(db.alerts.find({}, {"agent": 1, "agent_name": 1, "hostname": 1}))
-    unique_names = set()
+    # Ultra-Robust Discovery: Get all host stats in ONE aggregation query to avoid N+1 latency
+    pipeline = [
+        {
+            "$group": {
+                "_id": {"$ifNull": ["$agent.name", {"$ifNull": ["$agent_name", "$hostname"]}]},
+                "total_alerts": {"$sum": 1},
+                "crit": {
+                    "$sum": {
+                        "$cond": [{"$or": [{"$eq": ["$org_risk", "Critical"]}, {"$eq": ["$severity", "Critical"]}]}, 1, 0]
+                    }
+                },
+                "high": {
+                    "$sum": {
+                        "$cond": [{"$or": [{"$eq": ["$org_risk", "High"]}, {"$eq": ["$severity", "High"]}]}, 1, 0]
+                    }
+                },
+                "med": {
+                    "$sum": {
+                        "$cond": [{"$or": [{"$eq": ["$org_risk", "Medium"]}, {"$eq": ["$severity", "Medium"]}]}, 1, 0]
+                    }
+                },
+                "latest_ip": {"$last": {"$ifNull": ["$agent.ip", "$ip"]}}
+            }
+        }
+    ]
     
-    for a in all_alerts:
-        # Check all possible locations for a hostname
-        name = a.get('agent', {}).get('name') or a.get('agent_name') or a.get('hostname')
+    agg_results = list(db.alerts.aggregate(pipeline))
+    
+    # Store aggregated stats by hostname
+    host_stats = {}
+    for res in agg_results:
+        name = res["_id"]
         if name and name != "Unknown":
-            unique_names.add(name)
-    
-    # Also include manually registered agents
-    for reg in db.agents.find():
-        if reg.get("hostname"):
-            unique_names.add(reg.get("hostname"))
+            host_stats[name] = res
 
+    # Also include manually registered agents
     registered_info = {a["hostname"]: a for a in db.agents.find()}
+    unique_names = set(host_stats.keys()).union(set(registered_info.keys()))
+    
     final_inventory = []
     
     for hostname in sorted(list(unique_names)):
         reg_data = registered_info.get(hostname, {})
+        stats = host_stats.get(hostname, {"total_alerts": 0, "crit": 0, "high": 0, "med": 0, "latest_ip": None})
+        
         agent_data = {
             "hostname": hostname,
             "os": reg_data.get("os", "Linux/Other"),
@@ -385,22 +410,18 @@ def agents():
         }
         
         # IP Discovery for auto-detected hosts
-        if agent_data["ip_address"] == "Auto-Detected":
-            latest = db.alerts.find_one({"$or": [{"agent.name": hostname}, {"agent_name": hostname}]}, sort=[("timestamp", -1)])
-            if latest:
-                agent_data["ip_address"] = latest.get("agent", {}).get("ip") or latest.get("ip") or "Unknown"
+        if agent_data["ip_address"] == "Auto-Detected" and stats["latest_ip"]:
+            agent_data["ip_address"] = stats["latest_ip"]
 
-        # Risk & Health Scoring
-        host_query = {"$or": [{"agent.name": hostname}, {"agent_name": hostname}, {"hostname": hostname}]}
-        
-        crit = db.alerts.count_documents({"$and": [host_query, {"$or": [{"org_risk": "Critical"}, {"severity": "Critical"}]}]})
-        high = db.alerts.count_documents({"$and": [host_query, {"$or": [{"org_risk": "High"}, {"severity": "High"}]}]})
-        med = db.alerts.count_documents({"$and": [host_query, {"$or": [{"org_risk": "Medium"}, {"severity": "Medium"}]}]})
+        # Calculate Risk from pre-aggregated stats
+        crit = stats["crit"]
+        high = stats["high"]
+        med = stats["med"]
         
         risk_score = (crit * 25) + (high * 10) + (med * 5)
         agent_data["health_score"] = max(0, 100 - risk_score)
         agent_data["critical_alerts"] = crit
-        agent_data["total_alerts"] = db.alerts.count_documents(host_query)
+        agent_data["total_alerts"] = stats["total_alerts"]
         
         # Determine Risk Level for UI
         if crit > 0: agent_data["risk"] = "Critical"
