@@ -127,7 +127,7 @@ def vulnerabilities():
     asset_filter = request.args.get("asset", "All")
     sev_filter = request.args.get("severity", "All")
     page = int(request.args.get("page", 1))
-    limit = 20
+    limit = 15
 
     # If NO scan_id, show the GRID of SCANS
     if not scan_id:
@@ -392,14 +392,21 @@ def agents():
 
         # Risk & Health Scoring
         host_query = {"$or": [{"agent.name": hostname}, {"agent_name": hostname}, {"hostname": hostname}]}
-        crit = db.alerts.count_documents({**host_query, "$or": [{"org_risk": "Critical"}, {"severity": "Critical"}]})
-        high = db.alerts.count_documents({**host_query, "$or": [{"org_risk": "High"}, {"severity": "High"}]})
-        med = db.alerts.count_documents({**host_query, "$or": [{"org_risk": "Medium"}, {"severity": "Medium"}]})
         
-        risk = (crit * 25) + (high * 10) + (med * 5)
-        agent_data["health_score"] = max(0, 100 - risk)
+        crit = db.alerts.count_documents({"$and": [host_query, {"$or": [{"org_risk": "Critical"}, {"severity": "Critical"}]}]})
+        high = db.alerts.count_documents({"$and": [host_query, {"$or": [{"org_risk": "High"}, {"severity": "High"}]}]})
+        med = db.alerts.count_documents({"$and": [host_query, {"$or": [{"org_risk": "Medium"}, {"severity": "Medium"}]}]})
+        
+        risk_score = (crit * 25) + (high * 10) + (med * 5)
+        agent_data["health_score"] = max(0, 100 - risk_score)
         agent_data["critical_alerts"] = crit
         agent_data["total_alerts"] = db.alerts.count_documents(host_query)
+        
+        # Determine Risk Level for UI
+        if crit > 0: agent_data["risk"] = "Critical"
+        elif high > 0: agent_data["risk"] = "High"
+        elif med > 0: agent_data["risk"] = "Medium"
+        else: agent_data["risk"] = "Low"
         
         if agent_data["health_score"] < 40: agent_data["status"] = "Critical"
         elif agent_data["health_score"] < 80: agent_data["status"] = "Warning"

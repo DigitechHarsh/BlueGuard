@@ -14,3 +14,4 @@ Werkzeug==3.1.5
 openai
 python-dotenv
 pymongo
+gunicorn

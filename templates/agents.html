@@ -16,47 +16,32 @@
 </head>
 <body class="min-h-screen flex flex-col font-sans">
 
-    <!-- Navbar -->
+    <!-- Navbar (Synced with Dashboard) -->
     <nav class="glass-panel border-b border-slate-700 p-4 sticky top-0 z-50">
-        <div class="container mx-auto flex justify-between items-center px-4">
+        <div class="container mx-auto flex flex-wrap justify-between items-center gap-y-4 gap-x-2">
             <div class="flex items-center space-x-3">
                 <i class="fa-solid fa-shield-halved text-blue-500 text-3xl"></i>
-                <h1 class="text-2xl font-bold tracking-wider text-white uppercase">BLUE<span class="text-blue-500">GUARD</span>
-                    <span class="text-sm text-slate-400 font-normal ml-2">ASSET INVENTORY</span>
-                </h1>
+                <h1 class="text-2xl font-bold tracking-wider text-white">BLUE<span class="text-blue-500">GUARD</span>
+                    <span class="text-sm text-slate-400 font-normal">AI SOC PLATFORM</span></h1>
             </div>
-            <div class="flex items-center space-x-6 text-sm font-medium">
-                <a href="/" class="text-slate-400 hover:text-white transition">Dashboard</a>
-                <a href="/logs" class="text-slate-400 hover:text-white transition">AI Logs</a>
-                <a href="/vulnerabilities" class="text-slate-400 hover:text-white transition">Vulnerabilities</a>
-                <a href="/agents" class="text-blue-400 border-b-2 border-blue-500 pb-1">Asset Inventory</a>
-                <a href="/alerts" class="text-slate-400 hover:text-white transition">Raw Stream</a>
+            
+            <div class="space-x-6 text-sm font-medium flex items-center ml-auto">
+                <a href="/" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-chart-line mr-2"></i>Dashboard</a>
+                <a href="/logs" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-server mr-2"></i>AI Analysis Logs</a>
+                <a href="/vulnerabilities" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-bug mr-2"></i>Vulnerabilities</a>
+                <a href="/reports" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-file-invoice mr-2"></i>Security Reports</a>
+                <a href="/agents" class="text-blue-400 border-b-2 border-blue-500 pb-1 hover:text-white transition"><i class="fa-solid fa-network-wired mr-2"></i>Asset Inventory</a>
+                <a href="/alerts" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-list mr-2"></i>Raw Stream</a>
+                
+                <button id="themeToggleBtn" class="text-slate-400 hover:text-white transition focus:outline-none p-2 rounded-full hover:bg-slate-800 ml-4 border-l border-slate-700 pl-4" title="Toggle Theme">
+                    <i id="themeIcon" class="fa-solid fa-sun text-lg"></i>
+                </button>
             </div>
         </div>
     </nav>
 
-    <div class="flex flex-1">
-        <!-- Sidebar -->
-        <aside class="w-64 glass-panel border-r border-slate-700 h-[calc(100vh-80px)] sticky top-20 p-6 hidden lg:block">
-            <nav class="space-y-4">
-                <p class="text-xs text-slate-500 font-bold uppercase tracking-widest mb-4">Navigation</p>
-                <a href="/" class="flex items-center space-x-3 p-3 rounded-lg text-slate-400 hover:bg-slate-800 transition">
-                    <i class="fa-solid fa-chart-line"></i>
-                    <span>Dashboard</span>
-                </a>
-                <a href="/vulnerabilities" class="flex items-center space-x-3 p-3 rounded-lg text-slate-400 hover:bg-slate-800 transition">
-                    <i class="fa-solid fa-bug"></i>
-                    <span>Vulnerabilities</span>
-                </a>
-                <a href="/agents" class="flex items-center space-x-3 p-3 rounded-lg bg-indigo-600 text-white shadow-lg shadow-indigo-500/20">
-                    <i class="fa-solid fa-microchip"></i>
-                    <span class="font-bold">Asset Inventory</span>
-                </a>
-            </nav>
-        </aside>
-
-        <!-- Main Content -->
-        <main class="flex-grow p-6">
+    <!-- Main Content -->
+    <main class="container mx-auto p-6 flex-grow">
             <div class="flex justify-between items-center mb-8">
                 <div>
                     <h2 class="text-3xl font-bold text-white tracking-tight">Infrastructure Health</h2>
@@ -112,7 +97,11 @@
                             </div>
                             <div class="bg-slate-900/50 p-2 rounded-lg text-center">
                                 <p class="text-[9px] text-slate-500 uppercase font-bold">Risk Level</p>
-                                <p class="text-lg font-bold {% if agent.risk == 'Critical' %}text-red-500{% else %}text-emerald-500{% endif %}">
+                                <p class="text-lg font-bold 
+                                    {% if agent.risk == 'Critical' %} text-red-500 
+                                    {% elif agent.risk == 'High' %} text-orange-500 
+                                    {% elif agent.risk == 'Medium' %} text-yellow-500 
+                                    {% else %} text-emerald-500 {% endif %}">
                                     {{ agent.risk }}
                                 </p>
                             </div>
@@ -122,7 +111,6 @@
                 {% endfor %}
             </div>
         </main>
-    </div>
 
     <script>
         if (localStorage.getItem('theme') === 'light') document.body.classList.add('light-mode');

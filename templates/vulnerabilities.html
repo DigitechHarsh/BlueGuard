@@ -40,10 +40,6 @@
                         {% endfor %}
                     </select>
                 </form>
-                
-                <button id="themeToggleBtn" class="text-slate-400 hover:text-white transition focus:outline-none p-2 rounded-full hover:bg-slate-800 ml-2" title="Toggle Theme">
-                    <i id="themeIcon" class="fa-solid fa-sun text-lg"></i>
-                </button>
             </div>
 
             <div class="space-x-6 text-sm font-medium flex items-center">
@@ -53,6 +49,10 @@
                 <a href="/reports" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-file-invoice mr-2"></i>Security Reports</a>
                 <a href="/agents" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-network-wired mr-2"></i>Asset Inventory</a>
                 <a href="/alerts" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-list mr-2"></i>Raw Stream</a>
+                
+                <button id="themeToggleBtn" class="text-slate-400 hover:text-white transition focus:outline-none p-2 rounded-full hover:bg-slate-800 ml-4 border-l border-slate-700 pl-4" title="Toggle Theme">
+                    <i id="themeIcon" class="fa-solid fa-sun text-lg"></i>
+                </button>
             </div>
         </div>
     </nav>
@@ -224,8 +224,8 @@
                         </td>
                         <td class="px-6 py-6 text-center font-black text-blue-400">{{ vuln.vpr_score }}</td>
                         <td class="px-6 py-6 text-center">
-                            <button onclick="analyzeVuln('{{ vuln._id }}')" class="p-2 bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white rounded-lg transition">
-                                <i class="fa-solid fa-robot"></i>
+                            <button onclick="analyzeVuln('{{ vuln._id }}')" class="px-3 py-1.5 bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white rounded-lg transition text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
+                                AI Analysis
                             </button>
                         </td>
                     </tr>
@@ -233,6 +233,36 @@
                 </tbody>
              </table>
         </div>
+
+        <!-- Pagination Controls -->
+        {% if total_pages > 1 %}
+        <div class="flex justify-between items-center mt-6 bg-slate-900/50 p-4 rounded-2xl border border-slate-700/50">
+            <div class="text-xs font-black uppercase tracking-widest text-slate-500">
+                Page <span class="text-blue-400">{{ page }}</span> of <span class="text-white">{{ total_pages }}</span>
+            </div>
+            <div class="flex space-x-2">
+                {% if page > 1 %}
+                <a href="/vulnerabilities?scan_id={{ current_scan_id }}&page={{ page - 1 }}&q={{ current_q }}&asset={{ current_asset }}&severity={{ current_severity }}" class="px-4 py-2 bg-slate-800 hover:bg-blue-600 text-white font-bold text-xs uppercase rounded-lg transition shadow">
+                    <i class="fa-solid fa-arrow-left mr-2"></i> Previous
+                </a>
+                {% else %}
+                <button disabled class="px-4 py-2 bg-slate-800/50 text-slate-600 font-bold text-xs uppercase rounded-lg cursor-not-allowed">
+                    <i class="fa-solid fa-arrow-left mr-2"></i> Previous
+                </button>
+                {% endif %}
+
+                {% if page < total_pages %}
+                <a href="/vulnerabilities?scan_id={{ current_scan_id }}&page={{ page + 1 }}&q={{ current_q }}&asset={{ current_asset }}&severity={{ current_severity }}" class="px-4 py-2 bg-slate-800 hover:bg-blue-600 text-white font-bold text-xs uppercase rounded-lg transition shadow">
+                    Next <i class="fa-solid fa-arrow-right ml-2"></i>
+                </a>
+                {% else %}
+                <button disabled class="px-4 py-2 bg-slate-800/50 text-slate-600 font-bold text-xs uppercase rounded-lg cursor-not-allowed">
+                    Next <i class="fa-solid fa-arrow-right ml-2"></i>
+                </button>
+                {% endif %}
+            </div>
+        </div>
+        {% endif %}
         {% endif %}
 
     </main>

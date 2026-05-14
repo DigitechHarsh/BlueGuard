@@ -91,10 +91,6 @@
                     <input type="datetime-local" name="start_time" value="{{ current_start }}" onchange="this.form.submit()" class="bg-slate-800 text-white text-xs p-2 py-1 focus:outline-none cursor-pointer border-r border-slate-700" title="Start Time">
                     <input type="datetime-local" name="end_time" value="{{ current_end }}" onchange="this.form.submit()" class="bg-slate-800 text-white text-xs p-2 py-1 focus:outline-none cursor-pointer" title="End Time">
                 </form>
-
-                <button id="themeToggleBtn" class="text-slate-400 hover:text-white transition focus:outline-none p-2 rounded-full hover:bg-slate-800 ml-2" title="Toggle Theme">
-                    <i id="themeIcon" class="fa-solid fa-sun text-lg"></i>
-                </button>
             </div>
 
             <div class="space-x-6 text-sm font-medium flex items-center">
@@ -104,6 +100,10 @@
                 <a href="/reports" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-file-invoice mr-2"></i>Security Reports</a>
                 <a href="/agents" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-network-wired mr-2"></i>Asset Inventory</a>
                 <a href="/alerts" class="text-slate-400 hover:text-white transition"><i class="fa-solid fa-list mr-2"></i>Raw Stream</a>
+                
+                <button id="themeToggleBtn" class="text-slate-400 hover:text-white transition focus:outline-none p-2 rounded-full hover:bg-slate-800 ml-4 border-l border-slate-700 pl-4" title="Toggle Theme">
+                    <i id="themeIcon" class="fa-solid fa-sun text-lg"></i>
+                </button>
             </div>
         </div>
     </nav>
