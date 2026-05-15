@@ -171,15 +171,40 @@
                         <tr class="hover:bg-slate-800/30 transition">
                             <td class="py-3 px-4 text-slate-400 whitespace-nowrap">{{ alert.get('timestamp', 'N/A')[:16].replace('T', ' ') }}</td>
                             <td class="py-3 px-4 text-white font-bold whitespace-nowrap">{{ alert.get('agent', {}).get('name', 'Unknown') }}</td>
-                            <td class="py-3 px-4 whitespace-nowrap">
-                                <span class="px-2 py-1 inline-flex text-[10px] font-bold rounded bg-red-500/10 text-red-400 border border-red-500/20">
-                                    {{ alert.get('cve_id') or 'N/A' }}
-                                </span>
+                            <td class="py-3 px-4">
+                                {% if alert.get('cve_id') and alert.get('cve_id') != 'N/A' %}
+                                <div class="flex flex-wrap gap-1">
+                                    {% for cve in alert.get('cve_id').split(',') %}
+                                    {% set cve_clean = cve.strip() %}
+                                    {% if cve_clean and cve_clean != 'N/A' %}
+                                    <a href="https://nvd.nist.gov/vuln/detail/{{ cve_clean }}" target="_blank"
+                                        class="px-2 py-1 inline-flex text-[10px] font-bold rounded bg-red-500/10 text-red-400 border border-red-500/20 hover:bg-red-500/30 transition">
+                                        {{ cve_clean }}
+                                    </a>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <span class="text-[10px] text-slate-600 italic">N/A</span>
+                                {% endif %}
                             </td>
-                            <td class="py-3 px-4 whitespace-nowrap">
-                                <span class="px-2 py-1 inline-flex text-[10px] font-bold rounded bg-blue-500/10 text-blue-400 border border-blue-500/20">
-                                    {{ alert.get('cwe_id') or 'N/A' }}
-                                </span>
+                            <td class="py-3 px-4">
+                                {% if alert.get('cwe_id') and alert.get('cwe_id') != 'N/A' %}
+                                <div class="flex flex-wrap gap-1">
+                                    {% for cwe in alert.get('cwe_id').split(',') %}
+                                    {% set cwe_clean = cwe.strip() %}
+                                    {% if cwe_clean and cwe_clean != 'N/A' %}
+                                    {% set cwe_num = cwe_clean.split('-')[-1] if '-' in cwe_clean else cwe_clean %}
+                                    <a href="https://cwe.mitre.org/data/definitions/{{ cwe_num }}.html" target="_blank"
+                                        class="px-2 py-1 inline-flex text-[10px] font-bold rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 hover:bg-blue-500/30 transition">
+                                        {{ cwe_clean }}
+                                    </a>
+                                    {% endif %}
+                                    {% endfor %}
+                                </div>
+                                {% else %}
+                                <span class="text-[10px] text-slate-600 italic">N/A</span>
+                                {% endif %}
                             </td>
                             <td class="py-3 px-4 whitespace-nowrap font-mono text-slate-300 font-bold">
                                 {{ alert.get('cvss_score') or '0.0' }}
