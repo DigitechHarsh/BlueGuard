@@ -566,15 +566,6 @@ def analyze_vulnerability(vuln_data):
     nessus_severity = vuln_data.get('nessus_severity', 'Low')
     vpr_score       = vuln_data.get('vpr_score', '0.0')
 
-    # Security Controls Context
-    controls_context = """
-    CURRENT SECURITY CONTROLS:
-    - Perimeter Firewall: Strict outbound rules, port blocking.
-    - WAF: Layer 7 protection for all public-facing APIs.
-    - EDR: Deployed on all endpoints (detects exploit behavior).
-    - Segmentation: DB servers isolated from Public VLAN.
-    """
-
     prompt = f"""
     You are a Senior Security Architect. Perform a 99% accurate Organizational Risk Assessment & Business Impact Analysis (BIA) for this vulnerability.
 
@@ -585,13 +576,14 @@ def analyze_vulnerability(vuln_data):
     Nessus Severity: {nessus_severity}
     VPR Score: {vpr_score}
 
-    {controls_context}
+    {ORG_SECURITY_CONTROLS}
 
     YOUR TASK:
-    1. BUSINESS IMPACT ANALYSIS (BIA): Analyze impact on Confidentiality, Integrity, and Availability.
-    2. SECURITY CONTROL VALIDATION: If the vulnerability is network-exploitable but the asset is behind a strict Firewall/Segmentation, reduce the 'Org Risk'. If it's a zero-day on a public-facing WAF-protected asset, evaluate if WAF can block it.
-    3. ASSET CRITICALITY: Assets like 'DB', 'Core', 'Prod', 'Gateway', 'Swift' are CRITICAL. 'Dev', 'Test', 'Internal-Office' are Medium/Low.
-    4. RE-CALCULATE SEVERITY: Provide a final 'Org Risk' (Critical/High/Medium/Low) which may differ from Nessus Global Severity.
+    1. CIA SCORE CALCULATION (CRITICAL): Calculate the Confidentiality, Integrity, and Availability impact scores on a scale of 0 to 10. You MUST start with the vulnerability's baseline theoretical impact, and then STRICTLY REDUCE the score based on the 'ORG_SECURITY_CONTROLS' provided above. For example, if a vulnerability requires external network access, but the asset is isolated internally behind the Palo Alto firewall, the availability/confidentiality impact should be severely reduced (e.g., 0-2). Provide 100% accurate scores contextualized to the org.
+    2. BUSINESS IMPACT ANALYSIS (BIA): Analyze impact on Confidentiality, Integrity, and Availability.
+    3. SECURITY CONTROL VALIDATION: Validate how specific controls (Palo Alto, Wazuh, No Root Access) actively mitigate or fail to mitigate this exact vulnerability.
+    4. ASSET CRITICALITY: Assets like 'DB', 'Core', 'Prod', 'Gateway', 'Swift' are CRITICAL. 'Dev', 'Test', 'Internal-Office' are Medium/Low.
+    5. RE-CALCULATE SEVERITY: Provide a final 'Org Risk' (Critical/High/Medium/Low) which may differ from Nessus Global Severity.
 
     OUTPUT JSON FORMAT (STRICT):
     {{
