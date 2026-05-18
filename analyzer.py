@@ -487,7 +487,7 @@ def classify_attack(alert):
                     result["cvss_score"] = "7.5"
             
             # 3. Final Range Validation (Ensure CVSS matches the final Severity string)
-            final_sev = result.get("severity", "Low")
+            final_sev = result.get("risk_severity", "Low")
             try:
                 current_cvss = float(result.get("cvss_score", 0))
             except:
