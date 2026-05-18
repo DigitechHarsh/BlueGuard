@@ -332,7 +332,7 @@
                     <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
                         <div>
                             <h4 class="text-blue-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">Business Impact Summary</h4>
-                            <p id="modalImpactSummary" class="text-slate-400 text-sm leading-relaxed"></p>
+                            <div id="modalImpactSummary" class="space-y-3"></div>
                         </div>
                         <div>
                             <h4 class="text-indigo-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">Remediation Roadmap</h4>
@@ -422,7 +422,20 @@
 
                     // Text Fields
                     document.getElementById('modalControlText').innerText = data.control_context || 'No specific control context available.';
-                    document.getElementById('modalImpactSummary').innerText = data.business_impact || data.summary || 'N/A';
+                    
+                    // Business Impact
+                    const impactContainer = document.getElementById('modalImpactSummary');
+                    impactContainer.innerHTML = '';
+                    const impacts = Array.isArray(data.business_impact) ? data.business_impact : (data.business_impact || data.summary || 'N/A').split('\n');
+                    impacts.forEach(impact => {
+                        if (impact.trim()) {
+                            impactContainer.innerHTML += `
+                                <div class="flex items-start gap-3 p-3 bg-slate-800/30 border border-slate-700/30 rounded-xl text-xs text-slate-300 leading-relaxed italic">
+                                    <i class="fa-solid fa-bolt text-blue-500 mt-1"></i>
+                                    <span>${impact.replace(/^\d+\.\s*/, '')}</span>
+                                </div>`;
+                        }
+                    });
 
                     // Remediation
                     const remList = document.getElementById('modalRemediationList');

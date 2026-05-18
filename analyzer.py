@@ -601,7 +601,7 @@ def analyze_vulnerability(vuln_data):
             "integrity": "0-10",
             "availability": "0-10"
         }},
-        "business_impact": "1-2 sentences on financial/operational/legal consequence.",
+        "business_impact": ["Impact 1: ...", "Impact 2: ...", "Impact 3: ..."],
         "control_context": "Briefly explain how our Firewall/WAF/EDR impacts this risk.",
         "remediation_steps": ["Step 1", "Step 2", "..."],
         "summary": "1-sentence executive summary of the threat."
@@ -609,6 +609,7 @@ def analyze_vulnerability(vuln_data):
 
     RULES:
     - Be extremely concise. No fluff.
+    - Provide exactly 3 to 4 points for business_impact, focusing on possibilities specific to the organizational infrastructure context.
     - Focus on organizational impact, not global theory.
     - Return ONLY valid JSON.
     """
