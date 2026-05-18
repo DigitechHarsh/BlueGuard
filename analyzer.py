@@ -482,9 +482,11 @@ def classify_attack(alert):
             
             # 2. Check for Admin/Root activity (High Priority)
             elif any(x in desc_lower or x in atk_lower for x in ["root", "privilege escalation", "admin", "zerologon", "proxylogon"]):
-                if result.get("risk_severity") not in ["Critical", "High"]:
-                    result["risk_severity"] = "High"
-                    result["cvss_score"] = "7.5"
+                # Do NOT escalate if it's just a failed login or brute force attempt
+                if not any(f in desc_lower for f in ["fail", "failed", "failure", "brute force"]):
+                    if result.get("risk_severity") not in ["Critical", "High"]:
+                        result["risk_severity"] = "High"
+                        result["cvss_score"] = "7.5"
             
             # 3. Final Range Validation (Ensure CVSS matches the final Severity string)
             final_sev = result.get("risk_severity", "Low")
