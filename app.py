@@ -219,6 +219,27 @@ def upload_nessus():
             cve = get_field(["definition.cve", "cve id", "cve"]) or "N/A"
             sev = get_field(["severity", "risk", "definition.severity"]) or "Low"
             vpr = get_field(["definition.vpr_v2.score", "vpr score", "vpr"]) or "0.0"
+            synopsis = row.get("Synopsis", "")
+            description = row.get("description", row.get("Description", ""))
+            
+            # --- DETERMINISTIC ORG RISK CALCULATION ---
+            def calc_org_risk(v_name, desc, n_sev):
+                text = (v_name + " " + desc).lower()
+                b_map = {"Critical": 4, "High": 3, "Medium": 2, "Low": 1}
+                base = b_map.get(n_sev, 1)
+                
+                if any(x in text for x in ["remote code execution", "rce", "unauthenticated", "network", "remote"]):
+                    base -= 1 # Firewall/Internal isolation mitigates this
+                if any(x in text for x in ["privilege escalation", "local", "credential", "root", "admin"]):
+                    base += 1 # Internal threat remains high due to access
+                if any(x in text for x in ["ransomware", "wannacry", "malware", "lockbit", "encrypt"]):
+                    base = 4  # Malware is always critical
+                    
+                base = max(1, min(base, 4))
+                r_map = {4: "Critical", 3: "High", 2: "Medium", 1: "Low"}
+                return r_map[base]
+
+            org_risk = calc_org_risk(v_name, description, sev)
             
             doc = {
                 "scan_id": scan_id,
@@ -226,9 +247,10 @@ def upload_nessus():
                 "vuln_name": v_name,
                 "cve_id": cve,
                 "nessus_severity": sev,
+                "org_risk": org_risk,
                 "vpr_score": vpr,
-                "synopsis": row.get("Synopsis", ""),
-                "description": row.get("description", row.get("Description", "")),
+                "synopsis": synopsis,
+                "description": description,
                 "solution": row.get("solution", row.get("Solution", "")),
                 "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             }

@@ -193,7 +193,7 @@
                         <th class="px-6 py-4">Vulnerability Name</th>
                         <th class="px-6 py-4">CVE Reference</th>
                         <th class="px-6 py-4 text-center">Severity</th>
-                        <th class="px-6 py-4 text-center">VPR Score</th>
+                        <th class="px-6 py-4 text-center">Org Risk</th>
                         <th class="px-6 py-4 text-center">AI Actions</th>
                     </tr>
                 </thead>
@@ -224,7 +224,16 @@
                                 {{ vuln.nessus_severity }}
                             </span>
                         </td>
-                        <td class="px-6 py-6 text-center font-black text-blue-400">{{ vuln.vpr_score }}</td>
+                        <td class="px-6 py-6 text-center">
+                            <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest
+                                {% if 'Critical' == vuln.org_risk %} bg-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.5)]
+                                {% elif 'High' == vuln.org_risk %} bg-orange-500 text-white
+                                {% elif 'Medium' == vuln.org_risk %} bg-yellow-500 text-black
+                                {% elif 'Low' == vuln.org_risk %} bg-emerald-500 text-white
+                                {% else %} bg-slate-800 text-slate-400 border border-slate-700 {% endif %}">
+                                {{ vuln.org_risk | default('PENDING') }}
+                            </span>
+                        </td>
                         <td class="px-6 py-6 text-center">
                             <button onclick="analyzeVuln('{{ vuln._id }}')" class="px-3 py-1.5 bg-indigo-600/20 text-indigo-400 hover:bg-indigo-600 hover:text-white rounded-lg transition text-[10px] font-black uppercase tracking-widest whitespace-nowrap">
                                 AI Analysis
@@ -292,34 +301,7 @@
 
                 <!-- Modal Content -->
                 <div class="p-10 max-h-[75vh] overflow-y-auto custom-scrollbar bg-slate-900/50">
-                    <!-- Top Row: Risk & CIA Matrix -->
-                    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-10">
-                        <!-- Risk Card -->
-                        <div class="lg:col-span-1 bg-slate-800/40 border border-slate-700/50 rounded-[2rem] p-8 flex flex-col items-center justify-center text-center">
-                            <h4 class="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-6">Final Org Risk</h4>
-                            <div id="modalRiskValue" class="text-5xl font-black uppercase tracking-tighter italic text-yellow-500">MEDIUM</div>
-                        </div>
-
-                        <!-- CIA Matrix -->
-                        <div class="lg:col-span-2 bg-slate-800/40 border border-slate-700/50 rounded-[2rem] p-8">
-                            <h4 class="text-slate-500 text-[10px] font-black uppercase tracking-[0.2em] mb-8 text-center">BIA Impact Matrix (CIA)</h4>
-                            <div class="flex justify-around items-center">
-                                <div class="flex flex-col items-center gap-3">
-                                    <div class="w-20 h-20 rounded-full border-4 border-blue-500 flex items-center justify-center text-2xl font-black text-white" id="cia-c">0</div>
-                                    <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Confid.</span>
-                                </div>
-                                <div class="flex flex-col items-center gap-3">
-                                    <div class="w-20 h-20 rounded-full border-4 border-emerald-500 flex items-center justify-center text-2xl font-black text-white" id="cia-i">0</div>
-                                    <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Integ.</span>
-                                </div>
-                                <div class="flex flex-col items-center gap-3">
-                                    <div class="w-20 h-20 rounded-full border-4 border-red-500 flex items-center justify-center text-2xl font-black text-white" id="cia-a">0</div>
-                                    <span class="text-[9px] font-black text-slate-500 uppercase tracking-widest">Avail.</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
+                    
                     <!-- Security Control Row -->
                     <div class="bg-emerald-500/5 border border-emerald-500/20 rounded-[1.5rem] p-8 mb-10">
                         <h4 class="text-emerald-500 text-[10px] font-black uppercase tracking-[0.2em] mb-4 flex items-center gap-2">
@@ -328,18 +310,10 @@
                         <p id="modalControlText" class="text-slate-300 text-base leading-relaxed italic"></p>
                     </div>
 
-                    <!-- Summary & Remediation -->
-                    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                        <div>
-                            <h4 class="text-blue-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">Business Impact Summary</h4>
-                            <div id="modalImpactSummary" class="space-y-3"></div>
-                        </div>
-                        <div>
-                            <h4 class="text-indigo-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">Remediation Roadmap</h4>
-                            <div id="modalRemediationList" class="space-y-3">
-                                <!-- Steps -->
-                            </div>
-                        </div>
+                    <!-- Summary -->
+                    <div>
+                        <h4 class="text-blue-400 text-[10px] font-black uppercase tracking-[0.2em] mb-4">Business Impact Summary</h4>
+                        <div id="modalImpactSummary" class="space-y-3"></div>
                     </div>
                 </div>
 
@@ -406,20 +380,6 @@
                         return;
                     }
 
-                    // Fill Modal UI (Mapping JSON to SS layout)
-                    const riskValue = document.getElementById('modalRiskValue');
-                    riskValue.innerText = data.org_risk || 'UNKNOWN';
-                    riskValue.className = `text-5xl font-black uppercase tracking-tighter italic ${
-                        data.org_risk === 'Critical' ? 'text-red-500' : 
-                        data.org_risk === 'High' ? 'text-orange-500' : 'text-yellow-500'
-                    }`;
-
-                    // CIA Matrix
-                    const matrix = data.cia_matrix || { confidentiality: '0', integrity: '0', availability: '0' };
-                    document.getElementById('cia-c').innerText = matrix.confidentiality;
-                    document.getElementById('cia-i').innerText = matrix.integrity;
-                    document.getElementById('cia-a').innerText = matrix.availability;
-
                     // Text Fields
                     document.getElementById('modalControlText').innerText = data.control_context || 'No specific control context available.';
                     
@@ -433,20 +393,6 @@
                                 <div class="flex items-start gap-3 p-3 bg-slate-800/30 border border-slate-700/30 rounded-xl text-xs text-slate-300 leading-relaxed italic">
                                     <i class="fa-solid fa-bolt text-blue-500 mt-1"></i>
                                     <span>${impact.replace(/^\d+\.\s*/, '')}</span>
-                                </div>`;
-                        }
-                    });
-
-                    // Remediation
-                    const remList = document.getElementById('modalRemediationList');
-                    remList.innerHTML = '';
-                    const steps = Array.isArray(data.remediation_steps) ? data.remediation_steps : (data.remediation_steps || "").split('\n');
-                    steps.forEach(step => {
-                        if (step.trim()) {
-                            remList.innerHTML += `
-                                <div class="flex items-start gap-3 p-3 bg-slate-800/30 border border-slate-700/30 rounded-xl text-xs text-slate-300 leading-relaxed italic">
-                                    <i class="fa-solid fa-circle-check text-emerald-500 mt-1"></i>
-                                    <span>${step.replace(/^\d+\.\s*/, '')}</span>
                                 </div>`;
                         }
                     });
