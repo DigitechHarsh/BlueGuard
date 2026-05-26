@@ -225,7 +225,7 @@
                             </span>
                         </td>
                         <td class="px-6 py-6 text-center">
-                            <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest
+                            <span id="risk-span-{{ vuln._id }}" class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest
                                 {% if 'Critical' == vuln.org_risk %} bg-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.5)]
                                 {% elif 'High' == vuln.org_risk %} bg-orange-500 text-white
                                 {% elif 'Medium' == vuln.org_risk %} bg-yellow-500 text-black
@@ -378,6 +378,21 @@
                     if (data.error) {
                         alert('Analysis Error: ' + data.error);
                         return;
+                    }
+
+                    // Dynamically update the row's Org Risk pill if returned by AI
+                    if (data.org_risk) {
+                        const riskSpan = document.getElementById('risk-span-' + id);
+                        if (riskSpan) {
+                            riskSpan.innerText = data.org_risk.toUpperCase();
+                            // Reset classes
+                            riskSpan.className = "px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ";
+                            if (data.org_risk === "Critical") riskSpan.className += "bg-red-500 text-white shadow-[0_0_10px_rgba(239,68,68,0.5)]";
+                            else if (data.org_risk === "High") riskSpan.className += "bg-orange-500 text-white";
+                            else if (data.org_risk === "Medium") riskSpan.className += "bg-yellow-500 text-black";
+                            else if (data.org_risk === "Low") riskSpan.className += "bg-emerald-500 text-white";
+                            else riskSpan.className += "bg-slate-800 text-slate-400 border border-slate-700";
+                        }
                     }
 
                     // Text Fields

@@ -301,6 +301,16 @@ def analyze_vuln_route(vuln_id):
         if isinstance(data, list) and len(data) > 0:
             data = data[0]
             
+        # --- SAVE AI RESULT TO DB ---
+        if "org_risk" in data:
+            db.vulnerabilities.update_one(
+                {"_id": ObjectId(vuln_id)},
+                {"$set": {
+                    "org_risk": data["org_risk"],
+                    "ai_analyzed": True
+                }}
+            )
+            
         return jsonify(data), 200
     except Exception as e:
         print(f"Route Analysis Error: {e}")
