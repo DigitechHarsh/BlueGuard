@@ -300,8 +300,9 @@ def upload_nessus():
             cve = get_field(["definition.cve", "cve id", "cve"]) or "N/A"
             sev = get_field(["severity", "risk", "definition.severity"]) or "Low"
             vpr = get_field(["definition.vpr_v2.score", "vpr score", "vpr"]) or "0.0"
-            synopsis = row.get("Synopsis", "")
-            description = row.get("description", row.get("Description", ""))
+            synopsis = get_field(["synopsis", "summary", "short description"]) or ""
+            description = get_field(["description", "plugin description", "plugin text", "details", "desc", "issue details"]) or ""
+            solution = get_field(["solution", "remediation", "fix", "patch"]) or ""
             
             doc = {
                 "scan_id": scan_id,
@@ -313,7 +314,7 @@ def upload_nessus():
                 "vpr_score": vpr,
                 "synopsis": synopsis,
                 "description": description,
-                "solution": row.get("solution", row.get("Solution", "")),
+                "solution": solution,
                 "timestamp": datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
             }
             vulns_to_insert.append(doc)
