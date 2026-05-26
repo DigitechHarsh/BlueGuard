@@ -274,8 +274,8 @@ def upload_nessus():
                     base -= 1
                     
                 # Escalation: Insider threats, bypasses, or local privilege escalation.
-                # Since attackers bypass perimeter controls here, the risk is severe.
-                if any(x in text for x in ["privilege escalation", "local", "credential", "root", "admin", "bypass"]):
+                # Since attackers bypass perimeter controls here, the risk is severe. (kernel issues often mean local root)
+                if any(x in text for x in ["privilege escalation", "local", "credential", "root", "admin", "bypass", "kernel"]):
                     base += 1 
                     
                 # Absolute Escalation: Destructive malware / ransomware that moves laterally (e.g. via SMB).
