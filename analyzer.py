@@ -12,6 +12,7 @@ load_dotenv()
 client = OpenAI(
   base_url="https://openrouter.ai/api/v1",
   api_key=os.getenv("OPENROUTER_API_KEY"),
+  timeout=15.0
 )
 
 import certifi
@@ -558,162 +559,167 @@ def classify_attack(alert):
 
 def analyze_vulnerability(vuln_data):
     """
-    🧠 HIGH-PRECISION ANALYSIS (99% Accuracy Goal)
-    Specifically analyzes a Nessus vulnerability for organizational risk in a FinTech context.
-    Uses Security Control Validation & Business Impact Analysis (BIA).
+    🧠 HIGH-PRECISION ANALYSIS — CVE-Aware, Context-Aware
+    Analyzes a Nessus vulnerability for organizational risk.
+    Uses CVE IDs + vulnerability name to derive context from AI knowledge
+    when description is not available in the CSV.
     """
     asset_name      = vuln_data.get('asset_name', 'Unknown')
     vuln_name       = vuln_data.get('vuln_name', 'Unknown')
     cve_id          = vuln_data.get('cve_id', 'N/A')
     nessus_severity = vuln_data.get('nessus_severity', 'Low')
     vpr_score       = vuln_data.get('vpr_score', '0.0')
+    description     = vuln_data.get('description', '').strip()
+    synopsis        = vuln_data.get('synopsis', '').strip()
+
+    # Build best available context for AI
+    vuln_context = description or synopsis or ""
 
     prompt = f"""
-    You are a Senior Security Architect. Perform a 99% accurate Organizational Risk Assessment & Business Impact Analysis (BIA) for this vulnerability.
+You are a Senior Security Architect performing a precise Organizational Risk Assessment for a vulnerability found in an internal corporate network.
 
-    DATA:
-    Asset: {asset_name}
-    Vulnerability: {vuln_name}
-    CVE ID: {cve_id}
-    Nessus Severity: {nessus_severity}
-    VPR Score: {vpr_score}
+=== VULNERABILITY DETAILS ===
+Asset Name: {asset_name}
+Vulnerability Name: {vuln_name}
+CVE ID(s): {cve_id}
+Nessus Severity (global): {nessus_severity}
+VPR Score: {vpr_score}
+Additional Context (may be empty): {vuln_context or "NOT PROVIDED — use your training knowledge about the CVE IDs and vulnerability name above."}
 
-    {ORG_SECURITY_CONTROLS}
+=== ORGANIZATION SECURITY CONTROLS ===
+1. ALL servers are on a PRIVATE INTERNAL NETWORK ONLY — zero internet exposure. No external SSH, no public-facing ports.
+2. Perimeter Palo Alto Networks firewall with Threat Prevention + Anti-Spyware enabled.
+3. Wazuh EDR agents on ALL servers — real-time command execution monitoring + alerting.
+4. End users have NO admin/root privileges. Data exfiltration outside LAN is blocked.
+5. 180+ assets monitored continuously.
 
-    YOUR TASK:
-    1. CIA SCORE CALCULATION (CRITICAL): Calculate the Confidentiality, Integrity, and Availability impact scores on a scale of 0 to 10. You MUST start with the vulnerability's baseline theoretical impact, and then STRICTLY REDUCE the score based on the 'ORG_SECURITY_CONTROLS' provided above. For example, if a vulnerability requires external network access, but the asset is isolated internally behind the Palo Alto firewall, the availability/confidentiality impact should be severely reduced (e.g., 0-2). Provide 100% accurate scores contextualized to the org.
-    2. BUSINESS IMPACT ANALYSIS (BIA): Analyze impact on Confidentiality, Integrity, and Availability.
-    3. SECURITY CONTROL VALIDATION: Validate how specific controls (Palo Alto, Wazuh, No Root Access) actively mitigate or fail to mitigate this exact vulnerability.
-    4. ASSET CRITICALITY: Assets like 'DB', 'Core', 'Prod', 'Gateway', 'Swift' are CRITICAL. 'Dev', 'Test', 'Internal-Office' are Medium/Low.
-    5. RE-CALCULATE SEVERITY: Provide a final 'Org Risk' (Critical/High/Medium/Low) which may differ from Nessus Global Severity.
+=== YOUR TASK ===
+STEP 1 — KNOWLEDGE LOOKUP: If CVE IDs are provided, use your training knowledge to recall what type of vulnerability they represent (e.g., privilege escalation, remote code execution, memory corruption, etc.). You MUST do this even if no description text is given.
 
-    OUTPUT JSON FORMAT (STRICT):
-    {{
-        "org_risk": "Critical|High|Medium|Low",
-        "cia_matrix": {{
-            "confidentiality": "0-10",
-            "integrity": "0-10",
-            "availability": "0-10"
-        }},
-        "business_impact": ["Impact 1: ...", "Impact 2: ...", "Impact 3: ..."],
-        "control_context": "Briefly explain how our Firewall/WAF/EDR impacts this risk.",
-        "remediation_steps": ["Step 1", "Step 2", "..."],
-        "summary": "1-sentence executive summary of the threat."
-    }}
+STEP 2 — ATTACK VECTOR CHECK:
+- If the vulnerability requires REMOTE / UNAUTHENTICATED access from outside → the Palo Alto firewall heavily mitigates it. Downgrade risk by 1 level.
+- If the vulnerability is LOCAL (kernel, privilege escalation, memory, local config) → The firewall provides ZERO protection. This is a serious internal risk. Escalate risk.
+- If the vulnerability affects widely-used core software (openssl, kernel, glibc, log4j, openssh) on internal servers → Even if Nessus says Medium, the actual org impact can be HIGH because: (a) internal lateral movement is possible, (b) data confidentiality is at risk, (c) Wazuh may not catch zero-day kernel exploits fast enough.
 
-    RULES:
-    - Be extremely concise. No fluff.
-    - Provide exactly 3 to 4 points for business_impact, focusing on possibilities specific to the organizational infrastructure context.
-    - Focus on organizational impact, not global theory.
-    - Return ONLY valid JSON.
-    """
+STEP 3 — ASSET CRITICALITY:
+- Assets with names like DB, Core, Prod, Gateway, SWIFT, API → CRITICAL assets, escalate risk.
+- Assets like Dev, Test → reduce risk by 1 level.
+
+STEP 4 — FINAL ORG RISK DECISION:
+Apply these mandatory rules:
+- Kernel / privilege escalation CVEs on ANY internal server = HIGH or CRITICAL (attacker already inside gets root → full server compromise).
+- OpenSSL / TLS CVEs = HIGH (internal traffic decryption risk, even on internal network).
+- Log4j / RCE CVEs = CRITICAL (fire-and-forget, works even through internal traffic).
+- openssh CVEs = HIGH (lateral movement within internal network).
+- nginx / web server CVEs with internal access = MEDIUM (limited blast radius if internal-only).
+- Python / minor library CVEs = MEDIUM or LOW depending on CVSS.
+- Low CVSS (< 4.0) patches with no known exploits = LOW.
+
+OUTPUT JSON (STRICT — return ONLY this JSON, no text outside it):
+{{
+    "org_risk": "Critical|High|Medium|Low",
+    "cia_matrix": {{
+        "confidentiality": "0-10",
+        "integrity": "0-10",
+        "availability": "0-10"
+    }},
+    "business_impact": ["Impact 1", "Impact 2", "Impact 3"],
+    "control_context": "One sentence explaining which controls mitigate or fail to mitigate this.",
+    "remediation_steps": ["Step 1", "Step 2"],
+    "summary": "One executive sentence about the real organizational risk."
+}}
+"""
+
+    models_to_try = [
+        "openrouter/free",
+        "nvidia/nemotron-nano-9b-v2:free",
+        "google/gemini-2.0-flash-001"
+    ]
     
-    try:
-        print(f"[AI-BIA] Analyzing high-precision risk for: {asset_name}")
-        response = client.chat.completions.create(
-            model="google/gemini-2.0-flash-001",
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.1,
-            max_tokens=400,
-            response_format={ "type": "json_object" }
-        )
-        print("[AI-BIA] Analysis complete.")
-        return response.choices[0].message.content.strip()
-    except Exception as e:
-        print(f"BIA AI ERROR: {str(e)}")
-        return json.dumps({
-            "org_risk": "Medium", 
-            "summary": "Analysis failed. Manual review required.",
-            "control_context": "AI analysis error.",
-            "remediation_steps": ["Check NVD for CVE details."]
-        })
-
-        is_rate_limit = "429" in str(e) or "Quota exceeded" in str(e) or "rate" in str(e).lower()
-        
-        desc_lower = description.lower()
-        mitre_tactic = "Defense Evasion"
-        mitre_technique = "Indicator Removal (T1070)"
-        attack_type = "Security Event"
-        cve_cwe = "N/A"
-        cvss_score = "N/A"
-        cwss_score = "0.0"
-        base_severity = "Medium"
-        org_risk_severity = "Low"
-        org_risk_assessment = "AI analysis unavailable. Based on organizational security controls (internal network only, Palo Alto firewall, Wazuh monitoring, no root access), the risk is assessed as reduced. Manual investigation recommended."
-        
-        # FIM Check
-        if "file integrity monitoring" in desc_lower or "syscheck" in desc_lower:
-            attack_type = "File Integrity Change"
-            mitre_tactic = "Defense Evasion"
-            mitre_technique = "Indicator Removal on Host (T1070)"
-            cve_cwe = "CWE-73" # External Control of File Name or Path
-            base_severity = "High"
-            org_risk_severity = "Medium"
-            remediation = "Verify if this file change was authorized. If not, restore from backup."
-            org_risk_assessment = "File integrity change detected. While Wazuh agents provide real-time monitoring and the internal network restricts external access, unauthorized file modifications could indicate insider threat activity. Remediation priority: Medium - verify change authorization within 24 hours."
-        elif "logon failure" in desc_lower or "authentication failure" in desc_lower:
-            attack_type = "Brute Force Attempt"
-            mitre_tactic = "Credential Access"
-            mitre_technique = "Brute Force (T1110)"
-            cve_cwe = "CWE-307" # Improper Restriction of Excessive Authentication Attempts
-            base_severity = "High"
-            org_risk_severity = "Low"
-            remediation = "Disable the source IP and enforce multi-factor authentication."
-            org_risk_assessment = "Brute force attempt detected. Given that servers are internal-only with no external SSH access, external exploitation is not feasible. The Palo Alto firewall with Threat Prevention further mitigates this risk. However, this could indicate an insider threat or compromised internal device. Remediation priority: Low - monitor for repeated attempts from same source."
-        elif "wannacry" in desc_lower or "ransomware" in desc_lower or "malware" in desc_lower:
-            attack_type = "Malware Infection"
-            mitre_tactic = "Impact"
-            mitre_technique = "Data Encrypted for Impact (T1486)"
-            cve_cwe = "CVE-2017-0144" # EternalBlue
-            base_severity = "Critical"
-            org_risk_severity = "Critical"
-            remediation = "Isolate infected host immediately. Shutdown SMB services. Restore from offline backups."
-            org_risk_assessment = "CRITICAL: Ransomware indicators detected. Although the network is internal, ransomware like WannaCry spreads laterally via SMB. Our internal isolation won't stop a worm once it's inside. Immediate isolation required to prevent total infrastructure loss."
-        elif "xss" in desc_lower or "cross-site scripting" in desc_lower:
-            attack_type = "Cross-Site Scripting (XSS)"
-            mitre_tactic = "Initial Access"
-            mitre_technique = "Exploit Public-Facing Application (T1190)"
-            cve_cwe = "CWE-79" # Cross-site Scripting
-            base_severity = "High"
-            org_risk_severity = "Low"
-            remediation = "Sanitize user input and implement Content Security Policy (CSP)."
-            org_risk_assessment = "XSS attempt detected in HTTP request. Perimeter Palo Alto firewall with Threat Prevention and internal-only access significantly reduce the likelihood of a successful exploit reaching a vulnerable endpoint. Remediation priority: Low."
-        elif "special privileges" in desc_lower or "root" in desc_lower:
-            attack_type = "Privilege Escalation"
-            mitre_tactic = "Privilege Escalation"
-            mitre_technique = "Exploitation for Privilege Escalation (T1068)"
-            cve_cwe = "CWE-269" # Improper Privilege Management
-            base_severity = "Critical"
-            org_risk_severity = "Critical"
-            remediation = "Patch the target vulnerability and audit system logs. Terminate the suspicious session."
-            org_risk_assessment = "CRITICAL: Privilege escalation attempt to root/admin. This bypasses our 'Restricted Privileges' control. Since the attacker is already internal, this is a direct threat to the core infrastructure. Immediate investigation required."
-        else:
-            attack_type = "General Security Event"
-            mitre_tactic = "Execution"
-            mitre_technique = "User Execution (T1204)"
-            cve_cwe = "CWE-20" # Improper Input Validation
-            base_severity = "Medium"
-            org_risk_severity = "Medium"
-            remediation = "Investigate manually for unusual system activity."
-            org_risk_assessment = "Security event detected. While we have multiple layers of defense, the nature of this event requires manual review to ensure internal integrity is not compromised."
-
-        analysis_msg = (
-            "⚠️ AI Analysis temporarily unavailable (API Quota Exceeded). Fallback risk assessment active using organizational security controls."
-            if is_rate_limit 
-            else f"Fallback classification used because AI generation failed. Organizational controls factored into risk assessment."
-        )
-
-        return json.dumps({
-            "attack_type": attack_type,
-            "mitre_tactic": mitre_tactic,
-            "mitre_technique": mitre_technique,
-            "analysis": analysis_msg,
-            "severity": org_risk_severity,
-            "remediation": remediation,
-            "cve_cwe": cve_cwe,
-            "cvss_score": cvss_score,
-            "cwss_score": cwss_score,
-            "base_severity": base_severity,
-            "org_risk_severity": org_risk_severity,
-            "org_risk_assessment": org_risk_assessment
-        })
+    last_error = None
+    for model in models_to_try:
+        try:
+            print(f"[AI-BIA] Analyzing: {vuln_name} | CVE: {cve_id} using model: {model}")
+            
+            # Try with response_format first
+            try:
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.1,
+                    max_tokens=2000,
+                    response_format={ "type": "json_object" },
+                    timeout=15.0
+                )
+            except Exception as e_fmt:
+                # Fallback to no response format (some free models don't support JSON mode)
+                print(f"[AI-BIA] Model {model} does not support JSON mode or failed formatting. Retrying without format parameter...")
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.1,
+                    max_tokens=2000,
+                    timeout=15.0
+                )
+                
+            if not response or not getattr(response, "choices", None) or len(response.choices) == 0:
+                raise ValueError(f"AI response choices is None or empty: {repr(response)}")
+                
+            choice = response.choices[0]
+            if not choice or not getattr(choice, "message", None):
+                raise ValueError(f"AI choice or message is None: {repr(choice)}")
+                
+            content = choice.message.content
+            if not content:
+                # If content is None, check if there is a reasoning field containing JSON
+                reasoning = getattr(choice.message, "reasoning", "") or ""
+                if reasoning and "{" in reasoning and "}" in reasoning:
+                    print("[AI-BIA] content is None, but found JSON structure in reasoning! Using reasoning text as content.")
+                    content = reasoning
+                else:
+                    raise ValueError("Received empty content from AI model.")
+                
+            # Clean and parse the response
+            cleaned_content = content.strip()
+            if cleaned_content.startswith("```"):
+                lines = cleaned_content.splitlines()
+                if lines[0].startswith("```"):
+                    lines = lines[1:]
+                if lines and lines[-1].strip() == "```":
+                    lines = lines[:-1]
+                cleaned_content = "\n".join(lines).strip()
+            
+            start_idx = cleaned_content.find("{")
+            end_idx = cleaned_content.rfind("}")
+            if start_idx != -1 and end_idx != -1:
+                cleaned_content = cleaned_content[start_idx:end_idx+1]
+                
+            # Validate JSON parsing
+            parsed_data = json.loads(cleaned_content)
+            
+            # Ensure org_risk is set and valid
+            org_risk = parsed_data.get("org_risk", "")
+            if org_risk not in ["Critical", "High", "Medium", "Low"]:
+                # Normalise/capitalize just in case
+                capitalized_risk = org_risk.strip().capitalize()
+                if capitalized_risk in ["Critical", "High", "Medium", "Low"]:
+                    parsed_data["org_risk"] = capitalized_risk
+                else:
+                    parsed_data["org_risk"] = nessus_severity if nessus_severity in ["Critical", "High", "Medium", "Low"] else "Medium"
+            
+            print(f"[AI-BIA] Analysis complete using {model}. Resulting Org Risk: {parsed_data.get('org_risk')}")
+            return json.dumps(parsed_data)
+            
+        except Exception as e:
+            print(f"[AI-BIA] Attempt with model {model} failed: {e}")
+            last_error = e
+            continue
+            
+    # All models failed, fallback
+    print(f"BIA AI ERROR (All models failed): {str(last_error)}")
+    return json.dumps({
+        "org_risk": nessus_severity if nessus_severity in ["Critical", "High", "Medium", "Low"] else "Medium",
+        "summary": "Analysis failed. Defaulted to Nessus severity.",
+        "control_context": "AI analysis error.",
+        "remediation_steps": ["Check NVD for CVE details."]
+    })
