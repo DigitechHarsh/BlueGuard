@@ -9,6 +9,7 @@ from analyzer import classify_attack
 from notifier import send_critical_alert_email
 from pymongo import MongoClient
 import threading
+import time
 import json
 import datetime
 
@@ -219,6 +220,48 @@ def vulnerabilities():
                            stats=summary_stats,
                            chart_data=chart_data)
 
+def process_scan_background(scan_id):
+    """Background thread to process all vulnerabilities via AI."""
+    from analyzer import analyze_vulnerability
+    print(f"[AI-THREAD] Starting background AI processing for scan_id: {scan_id}")
+    
+    # Process vulnerabilities that are PENDING_AI
+    vulns = list(db.vulnerabilities.find({"scan_id": scan_id, "org_risk": "PENDING_AI"}))
+    total = len(vulns)
+    
+    for i, vuln in enumerate(vulns):
+        print(f"[AI-THREAD] Processing {i+1}/{total}: {vuln.get('vuln_name')}")
+        try:
+            analysis_result = analyze_vulnerability(vuln)
+            data = json.loads(analysis_result)
+            if isinstance(data, list) and len(data) > 0:
+                data = data[0]
+                
+            new_org_risk = data.get("org_risk", vuln.get("nessus_severity", "Medium"))
+            
+            db.vulnerabilities.update_one(
+                {"_id": vuln["_id"]},
+                {"$set": {
+                    "org_risk": new_org_risk,
+                    "ai_analyzed": True
+                }}
+            )
+        except Exception as e:
+            print(f"[AI-THREAD] Error processing vuln {vuln['_id']}: {e}")
+            # On failure, fallback to Nessus severity so it doesn't stay PENDING forever
+            db.vulnerabilities.update_one(
+                {"_id": vuln["_id"]},
+                {"$set": {
+                    "org_risk": vuln.get("nessus_severity", "Medium"),
+                    "ai_analyzed": False
+                }}
+            )
+        
+        # Avoid hitting API rate limits
+        time.sleep(1.5)
+        
+    print(f"[AI-THREAD] Completed processing for scan_id: {scan_id}")
+
 @app.route("/upload_nessus", methods=["POST"])
 def upload_nessus():
     if 'file' not in request.files:
@@ -260,41 +303,13 @@ def upload_nessus():
             synopsis = row.get("Synopsis", "")
             description = row.get("description", row.get("Description", ""))
             
-            # --- DETERMINISTIC ORG RISK CALCULATION (100% ACCURATE BASED ON CONTROLS) ---
-            def calc_org_risk(v_name, desc, n_sev):
-                text = (v_name + " " + desc).lower()
-                b_map = {"Critical": 4, "High": 3, "Medium": 2, "Low": 1}
-                base = b_map.get(n_sev, 1)
-                
-                # Mitigation: Network is internal-only, behind Palo Alto firewall.
-                # External/remote exploits (RCE, XSS, SQLi) are heavily mitigated for internal networks.
-                if any(x in text for x in ["remote code execution", "rce", "unauthenticated", "remote", "external"]):
-                    base -= 2 
-                if any(x in text for x in ["xss", "cross-site scripting", "sql injection", "sqli"]):
-                    base -= 1
-                    
-                # Escalation: Insider threats, bypasses, or local privilege escalation.
-                # Since attackers bypass perimeter controls here, the risk is severe. (kernel issues often mean local root)
-                if any(x in text for x in ["privilege escalation", "local", "credential", "root", "admin", "bypass", "kernel"]):
-                    base += 1 
-                    
-                # Absolute Escalation: Destructive malware / ransomware that moves laterally (e.g. via SMB).
-                if any(x in text for x in ["ransomware", "wannacry", "malware", "lockbit", "encrypt"]):
-                    base = 4  # Always critical
-                    
-                base = max(1, min(base, 4))
-                r_map = {4: "Critical", 3: "High", 2: "Medium", 1: "Low"}
-                return r_map[base]
-
-            org_risk = calc_org_risk(v_name, description, sev)
-            
             doc = {
                 "scan_id": scan_id,
                 "asset_name": asset,
                 "vuln_name": v_name,
                 "cve_id": cve,
                 "nessus_severity": sev,
-                "org_risk": org_risk,
+                "org_risk": "PENDING_AI",
                 "vpr_score": vpr,
                 "synopsis": synopsis,
                 "description": description,
@@ -305,6 +320,12 @@ def upload_nessus():
         
         if vulns_to_insert:
             db.vulnerabilities.insert_many(vulns_to_insert)
+            
+            # Start Background AI Processing Thread
+            import threading
+            bg_thread = threading.Thread(target=process_scan_background, args=(scan_id,))
+            bg_thread.daemon = True
+            bg_thread.start()
             
             # 3. Create Scan Metadata
             db.nessus_scans.insert_one({

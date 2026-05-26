@@ -239,8 +239,9 @@
                                 {% elif 'High' == vuln.org_risk %} bg-orange-500 text-white
                                 {% elif 'Medium' == vuln.org_risk %} bg-yellow-500 text-black
                                 {% elif 'Low' == vuln.org_risk %} bg-emerald-500 text-white
+                                {% elif 'PENDING_AI' == vuln.org_risk %} bg-blue-500/20 text-blue-400 border border-blue-500/50 animate-pulse
                                 {% else %} bg-slate-800 text-slate-400 border border-slate-700 {% endif %}">
-                                {{ vuln.org_risk | default('PENDING') }}
+                                {% if 'PENDING_AI' == vuln.org_risk %}<i class="fa-solid fa-microchip mr-1"></i> AI ANALYZING{% else %}{{ vuln.org_risk }}{% endif %}
                             </span>
                         </td>
                         <td class="px-6 py-6 text-center">
