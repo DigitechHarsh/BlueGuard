@@ -312,9 +312,8 @@ def find_cached_analysis(vuln_name, cve_id, asset_name):
     return None
 
 def process_scan_background(scan_id):
-    """Background thread to process all vulnerabilities via AI with smart caching and parallel execution."""
-    from analyzer import analyze_vulnerability
-    from concurrent.futures import ThreadPoolExecutor, as_completed
+    """Background thread to process all vulnerabilities via AI with smart caching and batch prompting."""
+    from analyzer import find_cached_analysis, analyze_vulnerabilities_batch
     print(f"[AI-THREAD] Starting background AI processing for scan_id: {scan_id}")
     
     # Process vulnerabilities that are PENDING_AI
@@ -347,14 +346,31 @@ def process_scan_background(scan_id):
         vuln_name, cve_id, criticality = key
         db_risk = find_cached_analysis(vuln_name, cve_id, matching_vulns[0].get("asset_name"))
         if db_risk:
-            print(f"[AI-THREAD] Global DB cache hit for signature '{vuln_name}' ({criticality}) -> Reusing risk: {db_risk}")
-            db.vulnerabilities.update_many(
-                {"_id": {"$in": [v["_id"] for v in matching_vulns]}},
-                {"$set": {
-                    "org_risk": db_risk,
-                    "ai_analyzed": True
-                }}
-            )
+            # Try to copy the complete analyzed details from the DB cache hit
+            cached_doc = db.vulnerabilities.find_one({"vuln_name": vuln_name, "cve_id": cve_id, "ai_analyzed": True})
+            if cached_doc:
+                print(f"[AI-THREAD] Global DB cache hit for signature '{vuln_name}' ({criticality}) -> Reusing complete details")
+                db.vulnerabilities.update_many(
+                    {"_id": {"$in": [v["_id"] for v in matching_vulns]}},
+                    {"$set": {
+                        "org_risk": cached_doc.get("org_risk"),
+                        "cia_matrix": cached_doc.get("cia_matrix"),
+                        "business_impact": cached_doc.get("business_impact"),
+                        "control_context": cached_doc.get("control_context"),
+                        "remediation_steps": cached_doc.get("remediation_steps"),
+                        "summary": cached_doc.get("summary"),
+                        "ai_analyzed": True
+                    }}
+                )
+            else:
+                print(f"[AI-THREAD] Global DB cache hit for signature '{vuln_name}' ({criticality}) -> Reusing risk: {db_risk}")
+                db.vulnerabilities.update_many(
+                    {"_id": {"$in": [v["_id"] for v in matching_vulns]}},
+                    {"$set": {
+                        "org_risk": db_risk,
+                        "ai_analyzed": True
+                    }}
+                )
         else:
             to_analyze.append((key, matching_vulns))
             
@@ -364,44 +380,38 @@ def process_scan_background(scan_id):
         print(f"[AI-THREAD] All vulnerabilities resolved from cache! Completed processing for scan_id: {scan_id}")
         return
         
-    # Step 3: Run remaining signatures in parallel using ThreadPoolExecutor
-    def analyze_one_signature(key, sample_vuln):
-        vuln_name, cve_id, criticality = key
-        try:
-            print(f"[AI-THREAD] Querying AI for signature: '{vuln_name}' on {sample_vuln.get('asset_name')}")
-            analysis_result = analyze_vulnerability(sample_vuln)
-            data = json.loads(analysis_result)
-            if isinstance(data, list) and len(data) > 0:
-                data = data[0]
-            risk = data.get("org_risk", sample_vuln.get("nessus_severity", "Medium"))
-            return key, risk, True
-        except Exception as e:
-            print(f"[AI-THREAD] Error querying AI for signature {key}: {e}")
-            return key, sample_vuln.get("nessus_severity", "Medium"), False
-
-    # Using 3 parallel workers to stay safe from OpenRouter rate limits
-    max_workers = 3
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = {executor.submit(analyze_one_signature, key, mv[0]): (key, mv) for key, mv in to_analyze}
+    # Step 3: Run remaining signatures in batches of 5
+    batch_size = 5
+    for offset in range(0, len(to_analyze), batch_size):
+        batch_slice = to_analyze[offset:offset+batch_size]
+        batch_samples = [mv[0] for _, mv in batch_slice]
         
-        for future in as_completed(futures):
-            key, mv = futures[future]
-            vuln_name, cve_id, criticality = key
-            try:
-                _, risk, success = future.result()
-                print(f"[AI-THREAD] Completed AI query for: '{vuln_name}' -> Risk: {risk} (Success: {success})")
-                # Update all matching vulnerabilities in the database
+        print(f"[AI-THREAD] Running batch {offset // batch_size + 1} of {(len(to_analyze) - 1) // batch_size + 1} with {len(batch_samples)} signatures...")
+        
+        results_map = analyze_vulnerabilities_batch(batch_samples)
+        
+        # Apply the results
+        for key, mv in batch_slice:
+            sample_id = str(mv[0]["_id"])
+            if sample_id in results_map:
+                res = results_map[sample_id]
+                risk = res.get("org_risk", mv[0].get("nessus_severity", "Medium"))
+                
                 db.vulnerabilities.update_many(
                     {"_id": {"$in": [v["_id"] for v in mv]}},
                     {"$set": {
                         "org_risk": risk,
-                        "ai_analyzed": success
+                        "cia_matrix": res.get("cia_matrix", {"confidentiality": "5", "integrity": "5", "availability": "5"}),
+                        "business_impact": res.get("business_impact", []),
+                        "control_context": res.get("control_context", "AI analyzed."),
+                        "remediation_steps": res.get("remediation_steps", []),
+                        "summary": res.get("summary", "AI analyzed."),
+                        "ai_analyzed": True
                     }}
                 )
-                time.sleep(0.5)
-            except Exception as exc:
-                print(f"[AI-THREAD] Signature thread raised exception: {exc}")
-                # Fallback to Nessus severity for safety
+                print(f"[AI-THREAD] Successfully applied AI batch analysis for signature: '{key[0]}' -> Risk: {risk}")
+            else:
+                print(f"[AI-THREAD] AI batch result not found for signature: '{key[0]}'. Falling back.")
                 db.vulnerabilities.update_many(
                     {"_id": {"$in": [v["_id"] for v in mv]}},
                     {"$set": {
@@ -410,6 +420,10 @@ def process_scan_background(scan_id):
                     }}
                 )
                 
+        # Sleep to stay safe from openrouter free tier limits
+        if offset + batch_size < len(to_analyze):
+            time.sleep(1.0)
+            
     print(f"[AI-THREAD] Completed processing for scan_id: {scan_id}")
 
 @app.route("/upload_nessus", methods=["POST"])

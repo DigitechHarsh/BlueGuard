@@ -568,61 +568,46 @@ def analyze_vulnerability(vuln_data):
     """
     🧠 HIGH-PRECISION ANALYSIS — CVE-Aware, Context-Aware
     Analyzes a Nessus vulnerability for organizational risk.
-    Uses CVE IDs + vulnerability name to derive context from AI knowledge
-    when description is not available in the CSV.
     """
     asset_name      = vuln_data.get('asset_name', 'Unknown')
     vuln_name       = vuln_data.get('vuln_name', 'Unknown')
     cve_id          = vuln_data.get('cve_id', 'N/A')
     nessus_severity = vuln_data.get('nessus_severity', 'Low')
     vpr_score       = vuln_data.get('vpr_score', '0.0')
+    plugin_id       = vuln_data.get('plugin_id', 'N/A')
     description     = vuln_data.get('description', '').strip()
     synopsis        = vuln_data.get('synopsis', '').strip()
 
-    # Build best available context for AI
-    vuln_context = description or synopsis or ""
+    vuln_context = description or synopsis or "NOT PROVIDED — use your training knowledge about the CVE IDs and vulnerability name above."
 
     prompt = f"""
-You are a Senior Security Architect performing a precise Organizational Risk Assessment for a vulnerability found in an internal corporate network.
+You are a cybersecurity analyst. Analyze the following Nessus vulnerability finding:
 
 === VULNERABILITY DETAILS ===
 Asset Name: {asset_name}
 Vulnerability Name: {vuln_name}
 CVE ID(s): {cve_id}
-Nessus Severity (global): {nessus_severity}
+Nessus Severity: {nessus_severity}
 VPR Score: {vpr_score}
-Additional Context (may be empty): {vuln_context or "NOT PROVIDED — use your training knowledge about the CVE IDs and vulnerability name above."}
+Plugin ID: {plugin_id}
+Description: {vuln_context}
 
-=== ORGANIZATION SECURITY CONTROLS ===
-1. ALL servers are on a PRIVATE INTERNAL NETWORK ONLY — zero internet exposure. No external SSH, no public-facing ports.
-2. Perimeter Palo Alto Networks firewall with Threat Prevention + Anti-Spyware enabled.
-3. Wazuh EDR agents on ALL servers — real-time command execution monitoring + alerting.
-4. End users have NO admin/root privileges. Data exfiltration outside LAN is blocked.
-5. 180+ assets monitored continuously.
+=== EXISTING SECURITY CONTROLS ===
+1. Servers are not exposed to the internet and are accessible only within the internal network (no external SSH access, even with valid credentials).
+2. A perimeter Palo Alto Networks firewall is in place with Threat Prevention and Anti-Spyware profiles enabled.
+3. Wazuh EDR agents are deployed on all servers for real-time log monitoring, including command execution tracking and alerting on suspicious activities.
+4. End users do not have administrative/root privileges, and data exfiltration outside the internal network is restricted.
 
 === YOUR TASK ===
-STEP 1 — KNOWLEDGE LOOKUP: If CVE IDs are provided, use your training knowledge to recall what type of vulnerability they represent (e.g., privilege escalation, remote code execution, memory corruption, etc.). You MUST do this even if no description text is given.
+Provide a detailed assessment covering:
+- Real-world exploitability (beyond CVSS score; consider practical attack feasibility).
+- Possible attack paths within the given environment.
+- Potential business impact if exploited.
+- Likelihood of false positives.
+- Recommended remediation priority (with justification).
 
-STEP 2 — ATTACK VECTOR CHECK:
-- If the vulnerability requires REMOTE / UNAUTHENTICATED access from outside → the Palo Alto firewall heavily mitigates it. Downgrade risk by 1 level.
-- If the vulnerability is LOCAL (kernel, privilege escalation, memory, local config) → The firewall provides ZERO protection. This is a serious internal risk. Escalate risk.
-- If the vulnerability affects widely-used core software (openssl, kernel, glibc, log4j, openssh) on internal servers → Even if Nessus says Medium, the actual org impact can be HIGH because: (a) internal lateral movement is possible, (b) data confidentiality is at risk, (c) Wazuh may not catch zero-day kernel exploits fast enough.
-
-STEP 3 — ASSET CRITICALITY:
-- Assets with names like DB, Core, Prod, Gateway, SWIFT, API → CRITICAL assets, escalate risk.
-- Assets like Dev, Test → reduce risk by 1 level.
-
-STEP 4 — FINAL ORG RISK DECISION:
-Apply these mandatory rules:
-- Kernel / privilege escalation CVEs on ANY internal server = HIGH or CRITICAL (attacker already inside gets root → full server compromise).
-- OpenSSL / TLS CVEs = HIGH (internal traffic decryption risk, even on internal network).
-- Log4j / RCE CVEs = CRITICAL (fire-and-forget, works even through internal traffic).
-- openssh CVEs = HIGH (lateral movement within internal network).
-- nginx / web server CVEs with internal access = MEDIUM (limited blast radius if internal-only).
-- Python / minor library CVEs = MEDIUM or LOW depending on CVSS.
-- Low CVSS (< 4.0) patches with no known exploits = LOW.
-
-OUTPUT JSON (STRICT — return ONLY this JSON, no text outside it):
+=== OUTPUT FORMAT ===
+You MUST return ONLY a JSON object with this exact structure (no markdown fences, no conversational text outside the JSON):
 {{
     "org_risk": "Critical|High|Medium|Low",
     "cia_matrix": {{
@@ -630,10 +615,15 @@ OUTPUT JSON (STRICT — return ONLY this JSON, no text outside it):
         "integrity": "0-10",
         "availability": "0-10"
     }},
-    "business_impact": ["Impact 1", "Impact 2", "Impact 3"],
-    "control_context": "One sentence explaining which controls mitigate or fail to mitigate this.",
-    "remediation_steps": ["Step 1", "Step 2"],
-    "summary": "One executive sentence about the real organizational risk."
+    "business_impact": [
+        "Business impact detailing financial or operational loss..."
+    ],
+    "control_context": "Real-world exploitability and attack paths considering internal network, Palo Alto firewalls, and EDR controls.",
+    "remediation_steps": [
+        "Remediation step...",
+        "Remediation justification with priority details..."
+    ],
+    "summary": "Brief summary of practical attack feasibility, asset criticality, and likelihood of false positives."
 }}
 """
 
@@ -642,7 +632,6 @@ OUTPUT JSON (STRICT — return ONLY this JSON, no text outside it):
         try:
             print(f"[AI-BIA] Analyzing: {vuln_name} | CVE: {cve_id} using model: {model}")
             
-            # Try with response_format first (skip if Gemma to avoid timeouts)
             response = None
             supports_json_mode = "gemma" not in model.lower()
             
@@ -678,36 +667,26 @@ OUTPUT JSON (STRICT — return ONLY this JSON, no text outside it):
                 
             content = choice.message.content
             if not content:
-                # If content is None, check if there is a reasoning field containing JSON
-                reasoning = getattr(choice.message, "reasoning", "") or ""
-                if reasoning and "{" in reasoning and "}" in reasoning:
-                    print("[AI-BIA] content is None, but found JSON structure in reasoning! Using reasoning text as content.")
-                    content = reasoning
-                else:
-                    raise ValueError("Received empty content from AI model.")
+                raise ValueError("AI message content is empty")
                 
-            # Clean and parse the response
             cleaned_content = content.strip()
             if cleaned_content.startswith("```"):
                 lines = cleaned_content.splitlines()
-                if lines[0].startswith("```"):
+                if lines[0].startswith("```json") or lines[0].startswith("```"):
                     lines = lines[1:]
                 if lines and lines[-1].strip() == "```":
                     lines = lines[:-1]
                 cleaned_content = "\n".join(lines).strip()
-            
+                
             start_idx = cleaned_content.find("{")
             end_idx = cleaned_content.rfind("}")
             if start_idx != -1 and end_idx != -1:
                 cleaned_content = cleaned_content[start_idx:end_idx+1]
                 
-            # Validate JSON parsing
             parsed_data = json.loads(cleaned_content)
             
-            # Ensure org_risk is set and valid
             org_risk = parsed_data.get("org_risk", "")
             if org_risk not in ["Critical", "High", "Medium", "Low"]:
-                # Normalise/capitalize just in case
                 capitalized_risk = org_risk.strip().capitalize()
                 if capitalized_risk in ["Critical", "High", "Medium", "Low"]:
                     parsed_data["org_risk"] = capitalized_risk
@@ -726,7 +705,6 @@ OUTPUT JSON (STRICT — return ONLY this JSON, no text outside it):
                 break
             continue
             
-    # All models failed, fallback
     print(f"BIA AI ERROR (All models failed): {str(last_error)}")
     return json.dumps({
         "org_risk": nessus_severity if nessus_severity in ["Critical", "High", "Medium", "Low"] else "Medium",
@@ -734,3 +712,147 @@ OUTPUT JSON (STRICT — return ONLY this JSON, no text outside it):
         "control_context": "AI analysis error.",
         "remediation_steps": ["Check NVD for CVE details."]
     })
+
+
+def analyze_vulnerabilities_batch(batch_vulns):
+    """
+    🧠 BATCH ANALYSIS — Process multiple vulnerabilities in a single prompt.
+    Keeps 100% of the security controls and analysis context.
+    """
+    vuln_blocks = []
+    for i, v in enumerate(batch_vulns):
+        desc = v.get("description", "") or v.get("synopsis", "") or "NOT PROVIDED"
+        block = f"""--- VULNERABILITY #{i} ---
+ID: {v['_id']}
+Asset Name: {v.get('asset_name', 'Unknown')}
+Vulnerability Name: {v.get('vuln_name', 'Unknown')}
+CVE ID(s): {v.get('cve_id', 'N/A')}
+Nessus Severity: {v.get('nessus_severity', 'Medium')}
+VPR Score: {v.get('vpr_score', '0.0')}
+Plugin ID: {v.get('plugin_id', 'N/A')}
+Description: {desc}"""
+        vuln_blocks.append(block)
+        
+    vulns_input = "\n\n".join(vuln_blocks)
+
+    prompt = f"""
+You are a cybersecurity analyst. Analyze the following list of Nessus vulnerability findings:
+
+=== VULNERABILITY LIST ===
+{vulns_input}
+
+=== EXISTING SECURITY CONTROLS ===
+1. Servers are not exposed to the internet and are accessible only within the internal network (no external SSH access, even with valid credentials).
+2. A perimeter Palo Alto Networks firewall is in place with Threat Prevention and Anti-Spyware profiles enabled.
+3. Wazuh EDR agents are deployed on all servers for real-time log monitoring, including command execution tracking and alerting on suspicious activities.
+4. End users do not have administrative/root privileges, and data exfiltration outside the internal network is restricted.
+
+=== YOUR TASK ===
+For each vulnerability listed above, provide a detailed assessment covering:
+- Real-world exploitability (beyond CVSS score; consider practical attack feasibility).
+- Possible attack paths within the given environment.
+- Potential business impact if exploited.
+- Likelihood of false positives.
+- Recommended remediation priority (with justification).
+
+=== OUTPUT FORMAT ===
+You MUST return ONLY a JSON object containing a 'results' key with a list of assessment results in the exact same order as the inputs. No conversational text outside of the JSON.
+{{
+    "results": [
+        {{
+            "id": "vulnerability_unique_id_from_above",
+            "org_risk": "Critical|High|Medium|Low",
+            "cia_matrix": {{
+                "confidentiality": "0-10",
+                "integrity": "0-10",
+                "availability": "0-10"
+            }},
+            "business_impact": [
+                "Business impact string..."
+            ],
+            "control_context": "Real-world exploitability and attack paths considering internal network, Palo Alto firewalls, and EDR controls.",
+            "remediation_steps": [
+                "Remediation step...",
+                "Remediation justification with priority details..."
+            ],
+            "summary": "Detailed summary covering attack feasibility and likelihood of false positives."
+        }}
+    ]
+}}
+"""
+
+    last_error = None
+    for model in MODELS_TO_TRY:
+        try:
+            print(f"[AI-BIA] Querying batch of {len(batch_vulns)} items using model: {model}")
+            
+            response = None
+            supports_json_mode = "gemma" not in model.lower()
+            
+            if supports_json_mode:
+                try:
+                    response = client.chat.completions.create(
+                        model=model,
+                        messages=[{"role": "user", "content": prompt}],
+                        temperature=0.1,
+                        max_tokens=4000,
+                        response_format={ "type": "json_object" },
+                        timeout=5.0
+                    )
+                except Exception as e_fmt:
+                    print(f"[AI-BIA] Batch model {model} failed JSON format attempt: {e_fmt}. Retrying without format parameter...")
+                    response = None
+            
+            if not response:
+                response = client.chat.completions.create(
+                    model=model,
+                    messages=[{"role": "user", "content": prompt}],
+                    temperature=0.1,
+                    max_tokens=4000,
+                    timeout=8.0
+                )
+                
+            if not response or not getattr(response, "choices", None) or len(response.choices) == 0:
+                raise ValueError(f"Batch AI response choices is None or empty: {repr(response)}")
+                
+            content = response.choices[0].message.content
+            if not content:
+                raise ValueError("Batch AI message content is empty")
+                
+            cleaned_content = content.strip()
+            if cleaned_content.startswith("```"):
+                lines = cleaned_content.splitlines()
+                if lines[0].startswith("```json") or lines[0].startswith("```"):
+                    lines = lines[1:]
+                if lines and lines[-1].strip() == "```":
+                    lines = lines[:-1]
+                cleaned_content = "\n".join(lines).strip()
+                
+            start_idx = cleaned_content.find("{")
+            end_idx = cleaned_content.rfind("}")
+            if start_idx != -1 and end_idx != -1:
+                cleaned_content = cleaned_content[start_idx:end_idx+1]
+                
+            parsed_data = json.loads(cleaned_content)
+            results_list = parsed_data.get("results", [])
+            
+            results_map = {}
+            for r in results_list:
+                v_id = r.get("id")
+                if v_id:
+                    results_map[str(v_id)] = r
+            
+            print(f"[AI-BIA] Batch analysis complete using {model}. Resolved {len(results_map)} items.")
+            return results_map
+            
+        except Exception as e:
+            print(f"[AI-BIA] Batch attempt with model {model} failed: {e}")
+            last_error = e
+            err_msg = str(e).lower()
+            if "free-models-per-day" in err_msg:
+                print("[AI-BIA] Daily free model rate limit reached. Exiting batch loop early.")
+                break
+            continue
+            
+    print(f"[AI-BIA] Batch AI ERROR (All models failed): {str(last_error)}")
+    return {}
