@@ -827,5 +827,58 @@ def export_csv():
         headers={"Content-Disposition": "attachment;filename=BlueGuard_Incident_Report.csv"}
     )
 
+@app.route("/export_scan_csv/<scan_id>", methods=["GET"])
+def export_scan_csv(scan_id):
+    asset_filter = request.args.get("asset", "All")
+    sev_filter = request.args.get("severity", "All")
+    
+    query = {"scan_id": scan_id}
+    if asset_filter != "All":
+        query["asset_name"] = asset_filter
+    if sev_filter != "All":
+        query["nessus_severity"] = {"$regex": sev_filter, "$options": "i"}
+
+    vulns = list(db.vulnerabilities.find(query).sort("nessus_severity", -1))
+    scan_meta = db.nessus_scans.find_one({"scan_id": scan_id})
+    scan_name = scan_meta.get("name", f"Scan_{scan_id}") if scan_meta else f"Scan_{scan_id}"
+
+    output = io.StringIO()
+    writer = csv.writer(output)
+    
+    # Header Row
+    writer.writerow([
+        "Asset Name", 
+        "Vulnerability Name", 
+        "CVE ID", 
+        "Nessus Severity", 
+        "AI Calculated Org Risk", 
+        "VPR Score", 
+        "Synopsis", 
+        "Description", 
+        "Solution", 
+        "Timestamp"
+    ])
+    
+    for vuln in vulns:
+        writer.writerow([
+            vuln.get("asset_name", "N/A"),
+            vuln.get("vuln_name", "N/A"),
+            vuln.get("cve_id", "N/A"),
+            vuln.get("nessus_severity", "N/A"),
+            vuln.get("org_risk", "N/A"),
+            vuln.get("vpr_score", "N/A"),
+            vuln.get("synopsis", "N/A"),
+            vuln.get("description", "N/A"),
+            vuln.get("solution", "N/A"),
+            vuln.get("timestamp", "N/A")
+        ])
+    
+    filename = f"BlueGuard_Scan_{scan_name.replace(' ', '_')}.csv"
+    return Response(
+        output.getvalue(),
+        mimetype="text/csv",
+        headers={"Content-Disposition": f"attachment;filename={filename}"}
+    )
+
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False, threaded=True)

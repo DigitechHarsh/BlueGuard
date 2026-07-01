@@ -148,7 +148,12 @@
                 <a href="/vulnerabilities" class="text-blue-400 text-xs font-black uppercase tracking-widest hover:text-white transition flex items-center mb-2">
                     <i class="fa-solid fa-chevron-left mr-2"></i> Back to Scan Grid
                 </a>
-                <h2 class="text-3xl font-black text-white tracking-tight uppercase">{{ scan_name }}</h2>
+                <div class="flex items-center gap-4 mt-1">
+                    <h2 class="text-3xl font-black text-white tracking-tight uppercase">{{ scan_name }}</h2>
+                    <a href="/export_scan_csv/{{ current_scan_id }}?asset={{ current_asset }}&severity={{ current_severity }}" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-emerald-600/20" title="Download CSV Report">
+                        <i class="fa-solid fa-file-csv text-sm"></i> Download Analyzed CSV
+                    </a>
+                </div>
             </div>
 
             <!-- Advanced Filter Bar -->
