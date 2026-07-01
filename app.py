@@ -290,8 +290,29 @@ def vulnerabilities():
                            stats=summary_stats,
                            chart_data=chart_data)
 
+def get_asset_criticality(asset_name):
+    name_lower = asset_name.lower()
+    if any(k in name_lower for k in ["db", "core", "prod", "gateway", "swift", "api"]):
+        return "Critical"
+    elif any(k in name_lower for k in ["dev", "test"]):
+        return "Low"
+    return "Medium"
+
+def find_cached_analysis(vuln_name, cve_id, asset_name):
+    criticality = get_asset_criticality(asset_name)
+    try:
+        # Find all completed analyses for this vuln signature
+        cursor = db.vulnerabilities.find({"vuln_name": vuln_name, "cve_id": cve_id, "ai_analyzed": True})
+        for doc in cursor:
+            doc_asset = doc.get("asset_name", "Unknown")
+            if get_asset_criticality(doc_asset) == criticality:
+                return doc.get("org_risk")
+    except Exception as e:
+        print(f"[CACHE-ERR] Error reading cache from DB: {e}")
+    return None
+
 def process_scan_background(scan_id):
-    """Background thread to process all vulnerabilities via AI."""
+    """Background thread to process all vulnerabilities via AI with smart caching."""
     from analyzer import analyze_vulnerability
     print(f"[AI-THREAD] Starting background AI processing for scan_id: {scan_id}")
     
@@ -299,21 +320,54 @@ def process_scan_background(scan_id):
     vulns = list(db.vulnerabilities.find({"scan_id": scan_id, "org_risk": "PENDING_AI"}))
     total = len(vulns)
     
+    # Local in-memory cache for duplicate rows in the current scan
+    local_cache = {}
+    
     for i, vuln in enumerate(vulns):
-        print(f"[AI-THREAD] Processing {i+1}/{total}: {vuln.get('vuln_name')}")
+        vuln_name = vuln.get("vuln_name", "Unknown")
+        cve_id = vuln.get("cve_id", "N/A")
+        asset_name = vuln.get("asset_name", "Unknown")
+        
+        criticality = get_asset_criticality(asset_name)
+        cache_key = (vuln_name, cve_id, criticality)
+        
+        print(f"[AI-THREAD] Processing {i+1}/{total}: {vuln_name} on {asset_name} (Criticality: {criticality})")
+        
         try:
-            analysis_result = analyze_vulnerability(vuln)
-            data = json.loads(analysis_result)
-            if isinstance(data, list) and len(data) > 0:
-                data = data[0]
+            # 1. Check local in-memory cache first
+            if cache_key in local_cache:
+                print(f"[AI-THREAD] Local cache hit for '{vuln_name}'!")
+                new_org_risk = local_cache[cache_key]
+                ai_analyzed = True
                 
-            new_org_risk = data.get("org_risk", vuln.get("nessus_severity", "Medium"))
+            # 2. Check global database cache next
+            else:
+                db_cached_risk = find_cached_analysis(vuln_name, cve_id, asset_name)
+                if db_cached_risk:
+                    print(f"[AI-THREAD] Global DB cache hit for '{vuln_name}'!")
+                    new_org_risk = db_cached_risk
+                    local_cache[cache_key] = db_cached_risk
+                    ai_analyzed = True
+                else:
+                    # 3. Call AI model (Cache miss)
+                    analysis_result = analyze_vulnerability(vuln)
+                    data = json.loads(analysis_result)
+                    if isinstance(data, list) and len(data) > 0:
+                        data = data[0]
+                        
+                    new_org_risk = data.get("org_risk", vuln.get("nessus_severity", "Medium"))
+                    # Save to local cache
+                    local_cache[cache_key] = new_org_risk
+                    ai_analyzed = True
+                    
+                    # Avoid hitting API rate limits (only sleep when we actually make an API call!)
+                    time.sleep(0.7)
             
             db.vulnerabilities.update_one(
                 {"_id": vuln["_id"]},
                 {"$set": {
                     "org_risk": new_org_risk,
-                    "ai_analyzed": True
+                    "ai_analyzed": ai_analyzed
                 }}
             )
         except Exception as e:
@@ -326,10 +380,7 @@ def process_scan_background(scan_id):
                     "ai_analyzed": False
                 }}
             )
-        
-        # Avoid hitting API rate limits (optimized sleep time for fast models)
-        time.sleep(0.7)
-        
+            
     print(f"[AI-THREAD] Completed processing for scan_id: {scan_id}")
 
 @app.route("/upload_nessus", methods=["POST"])
