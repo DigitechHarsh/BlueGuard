@@ -16,6 +16,8 @@ client = OpenAI(
 )
 
 MODELS_TO_TRY = [
+    "google/gemini-2.5-flash",
+    "google/gemini-2.5-flash-lite",
     "google/gemma-4-31b-it:free",
     "google/gemma-4-26b-a4b-it:free",
     "nvidia/nemotron-nano-9b-v2:free",
