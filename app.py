@@ -19,17 +19,75 @@ app.secret_key = os.urandom(24)
 import certifi
 ca = certifi.where()
 
+class MockCursor:
+    def __init__(self, data=None):
+        self.data = data or []
+    def sort(self, *args, **kwargs):
+        return self
+    def skip(self, *args, **kwargs):
+        return self
+    def limit(self, *args, **kwargs):
+        return self
+    def __iter__(self):
+        return iter(self.data)
+    def __len__(self):
+        return len(self.data)
+    def __getitem__(self, index):
+        return self.data[index]
+
+class MockCollection:
+    def count_documents(self, *args, **kwargs):
+        return 0
+    def find(self, *args, **kwargs):
+        return MockCursor()
+    def find_one(self, *args, **kwargs):
+        return None
+    def distinct(self, *args, **kwargs):
+        return []
+    def insert_many(self, *args, **kwargs):
+        pass
+    def insert_one(self, *args, **kwargs):
+        pass
+    def update_one(self, *args, **kwargs):
+        pass
+    def delete_many(self, *args, **kwargs):
+        pass
+    def delete_one(self, *args, **kwargs):
+        pass
+    def aggregate(self, *args, **kwargs):
+        return []
+
+class MockDB:
+    def __init__(self):
+        self.alerts = MockCollection()
+        self.vulnerabilities = MockCollection()
+        self.nessus_scans = MockCollection()
+        self.cve_intelligence = MockCollection()
+        self.tickets = MockCollection()
+        self.users = MockCollection()
+        self.agents = MockCollection()
+    def __getattr__(self, name):
+        return MockCollection()
+
 # MongoDB Setup
+db_connected = False
+db = MockDB()
+
 try:
     client = MongoClient(os.getenv("MONGO_URI", "mongodb://localhost:27017/"), 
-                         serverSelectionTimeoutMS=10000,
+                         serverSelectionTimeoutMS=5000,
                          tlsCAFile=ca)
-    db = client.blueguard_db
     # Test connection
     client.server_info()
-    print("[MDB] ✅ Connected to MongoDB Atlas (cloud)!")
+    db = client.blueguard_db
+    db_connected = True
+    print("[MDB] Connected to MongoDB Atlas (cloud)!")
 except Exception as e:
     print(f"[FATAL] MongoDB connection failed: {e}")
+
+@app.context_processor
+def inject_db_status():
+    return dict(db_connected=db_connected)
 
 
 # ----- CORE HELPER & ROUTES -----
