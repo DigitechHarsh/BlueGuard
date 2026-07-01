@@ -654,7 +654,7 @@ OUTPUT JSON (STRICT — return ONLY this JSON, no text outside it):
                         temperature=0.1,
                         max_tokens=2000,
                         response_format={ "type": "json_object" },
-                        timeout=5.0
+                        timeout=3.0
                     )
                 except Exception as e_fmt:
                     print(f"[AI-BIA] Model {model} failed JSON format attempt: {e_fmt}. Retrying without format parameter...")
@@ -666,7 +666,7 @@ OUTPUT JSON (STRICT — return ONLY this JSON, no text outside it):
                     messages=[{"role": "user", "content": prompt}],
                     temperature=0.1,
                     max_tokens=2000,
-                    timeout=6.0
+                    timeout=4.0
                 )
                 
             if not response or not getattr(response, "choices", None) or len(response.choices) == 0:
