@@ -82,6 +82,18 @@ try:
     db = client.blueguard_db
     db_connected = True
     print("[MDB] Connected to MongoDB Atlas (cloud)!")
+    
+    # ─── CREATE INDEXES FOR HIGH-PERFORMANCE ───
+    try:
+        db.vulnerabilities.create_index([("scan_id", 1)])
+        db.vulnerabilities.create_index([("scan_id", 1), ("asset_name", 1)])
+        db.vulnerabilities.create_index([("scan_id", 1), ("nessus_severity", 1)])
+        db.vulnerabilities.create_index([("scan_id", 1), ("org_risk", 1)])
+        db.nessus_scans.create_index([("scan_id", 1)], unique=True)
+        db.alerts.create_index([("timestamp", -1)])
+        print("[MDB] Database indexes verified and created.")
+    except Exception as idx_err:
+        print(f"[WARN] Index creation failed: {idx_err}")
 except Exception as e:
     print(f"[FATAL] MongoDB connection failed: {e}")
 
