@@ -315,8 +315,8 @@ def process_scan_background(scan_id):
                 }}
             )
         
-        # Avoid hitting API rate limits
-        time.sleep(1.5)
+        # Avoid hitting API rate limits (optimized sleep time for fast models)
+        time.sleep(0.7)
         
     print(f"[AI-THREAD] Completed processing for scan_id: {scan_id}")
 

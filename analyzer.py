@@ -15,6 +15,13 @@ client = OpenAI(
   timeout=15.0
 )
 
+MODELS_TO_TRY = [
+    "google/gemma-4-31b-it:free",
+    "google/gemma-4-26b-a4b-it:free",
+    "nvidia/nemotron-nano-9b-v2:free",
+    "openrouter/free"
+]
+
 import certifi
 ca = certifi.where()
 
@@ -630,30 +637,30 @@ OUTPUT JSON (STRICT — return ONLY this JSON, no text outside it):
 }}
 """
 
-    models_to_try = [
-        "openrouter/free",
-        "nvidia/nemotron-nano-9b-v2:free",
-        "google/gemini-2.0-flash-001"
-    ]
-    
     last_error = None
-    for model in models_to_try:
+    for model in MODELS_TO_TRY:
         try:
             print(f"[AI-BIA] Analyzing: {vuln_name} | CVE: {cve_id} using model: {model}")
             
-            # Try with response_format first
-            try:
-                response = client.chat.completions.create(
-                    model=model,
-                    messages=[{"role": "user", "content": prompt}],
-                    temperature=0.1,
-                    max_tokens=2000,
-                    response_format={ "type": "json_object" },
-                    timeout=15.0
-                )
-            except Exception as e_fmt:
-                # Fallback to no response format (some free models don't support JSON mode)
-                print(f"[AI-BIA] Model {model} does not support JSON mode or failed formatting. Retrying without format parameter...")
+            # Try with response_format first (skip if Gemma to avoid timeouts)
+            response = None
+            supports_json_mode = "gemma" not in model.lower()
+            
+            if supports_json_mode:
+                try:
+                    response = client.chat.completions.create(
+                        model=model,
+                        messages=[{"role": "user", "content": prompt}],
+                        temperature=0.1,
+                        max_tokens=2000,
+                        response_format={ "type": "json_object" },
+                        timeout=5.0
+                    )
+                except Exception as e_fmt:
+                    print(f"[AI-BIA] Model {model} failed JSON format attempt: {e_fmt}. Retrying without format parameter...")
+                    response = None
+            
+            if not response:
                 response = client.chat.completions.create(
                     model=model,
                     messages=[{"role": "user", "content": prompt}],
