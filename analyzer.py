@@ -666,7 +666,7 @@ OUTPUT JSON (STRICT — return ONLY this JSON, no text outside it):
                     messages=[{"role": "user", "content": prompt}],
                     temperature=0.1,
                     max_tokens=2000,
-                    timeout=15.0
+                    timeout=6.0
                 )
                 
             if not response or not getattr(response, "choices", None) or len(response.choices) == 0:
@@ -720,6 +720,10 @@ OUTPUT JSON (STRICT — return ONLY this JSON, no text outside it):
         except Exception as e:
             print(f"[AI-BIA] Attempt with model {model} failed: {e}")
             last_error = e
+            err_msg = str(e).lower()
+            if "free-models-per-day" in err_msg:
+                print("[AI-BIA] Daily free model rate limit reached. Exiting fallback loop early.")
+                break
             continue
             
     # All models failed, fallback
