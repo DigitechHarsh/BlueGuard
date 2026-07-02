@@ -293,9 +293,6 @@
                             <th class="p-4">Source IP</th>
                             <th class="p-4">AI Classification</th>
                             <th class="p-4 text-center">CVE ID</th>
-                            <th class="p-4 text-center">CWE ID</th>
-                            <th class="p-4 text-center">CVSS</th>
-                            <th class="p-4 text-center">CWSS</th>
                             <th class="p-4">MITRE ATT&CK</th>
                             <th class="p-4 text-center">Base</th>
                             <th class="p-4 text-center text-cyan-400">Org Risk</th>
@@ -344,45 +341,7 @@
                                 <span class="text-[9px] text-slate-600 italic">N/A</span>
                                 {% endif %}
                             </td>
-                            <!-- CWE ID -->
-                            <td class="p-4">
-                                {% if alert.get('cwe_id') and alert.get('cwe_id') != 'N/A' %}
-                                <div class="flex flex-wrap gap-1">
-                                    {% for cwe in alert.get('cwe_id').split(',') %}
-                                    {% set cwe_clean = cwe.strip() %}
-                                    {% if cwe_clean and cwe_clean != 'N/A' %}
-                                    {% set cwe_num = cwe_clean.split('-')[-1] if '-' in cwe_clean else cwe_clean %}
-                                    <a href="https://cwe.mitre.org/data/definitions/{{ cwe_num }}.html" target="_blank"
-                                        class="text-[9px] px-1.5 py-0.5 rounded bg-blue-500/10 text-blue-400 border border-blue-500/20 font-black hover:bg-blue-500/30 transition">
-                                        {{ cwe_clean }}
-                                    </a>
-                                    {% endif %}
-                                    {% endfor %}
-                                </div>
-                                {% else %}
-                                <span class="text-[9px] text-slate-600 italic">N/A</span>
-                                {% endif %}
-                            </td>
-                            <!-- CVSS -->
-                            <td class="p-4 text-center">
-                                {% set score = alert.get('cvss_score', 0)|float %}
-                                <span
-                                    class="font-black text-xs {% if score >= 9.0 %}text-red-500{% elif score >= 7.0 %}text-orange-500{% elif score >= 4.0 %}text-yellow-500{% else %}text-emerald-500{% endif %}">
-                                    {{ "%.1f"|format(score) }}
-                                </span>
-                            </td>
-                            <!-- CWSS -->
-                            <td class="p-4 text-center">
-                                {% set cwss_val = alert.get('cwss_score', 0)|float %}
-                                <span class="text-[11px] font-bold px-2 py-0.5 rounded bg-slate-900 border border-slate-700
-                                    {% if cwss_val >= 90.0 %} text-red-400 border-red-500/30
-                                    {% elif cwss_val >= 70.0 %} text-orange-400 border-orange-500/30
-                                    {% elif cwss_val >= 40.0 %} text-yellow-400 border-yellow-500/30
-                                    {% else %} text-blue-400 border-blue-500/30
-                                    {% endif %}">
-                                    {{ "%.1f"|format(cwss_val) }}
-                                </span>
-                            </td>
+
                             <!-- MITRE ATT&CK -->
                             <td class="p-4">
                                 {% set m_id = alert.get('mitre_technique', 'N/A') %}
