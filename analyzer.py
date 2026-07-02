@@ -643,7 +643,7 @@ You MUST return ONLY a JSON object with this exact structure (no markdown fences
                         model=model,
                         messages=[{"role": "user", "content": prompt}],
                         temperature=0.1,
-                        max_tokens=2000,
+                        max_tokens=1000,
                         response_format={ "type": "json_object" },
                         timeout=3.0
                     )
@@ -656,7 +656,7 @@ You MUST return ONLY a JSON object with this exact structure (no markdown fences
                     model=model,
                     messages=[{"role": "user", "content": prompt}],
                     temperature=0.1,
-                    max_tokens=2000,
+                    max_tokens=1000,
                     timeout=4.0
                 )
                 
