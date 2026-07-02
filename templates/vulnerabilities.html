@@ -146,7 +146,7 @@
                 </a>
                 <div class="flex items-center gap-4 mt-1">
                     <h2 class="text-3xl font-black text-white tracking-tight uppercase">{{ scan_name }}</h2>
-                    <a href="/export_scan_csv/{{ current_scan_id }}?asset={{ current_asset }}&severity={{ current_severity }}" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-emerald-600/20" title="Download CSV Report">
+                    <a href="/export_scan_csv/{{ current_scan_id }}?asset={{ current_asset }}&severity={{ current_severity }}&org_risk={{ current_org_risk }}" class="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl text-xs font-bold transition flex items-center gap-2 shadow-lg shadow-emerald-600/20" title="Download CSV Report">
                         <i class="fa-solid fa-file-csv text-sm"></i> Download Analyzed CSV
                     </a>
                 </div>
@@ -176,13 +176,26 @@
 
                 <!-- Severity Filter -->
                 <div class="flex items-center bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
-                    <span class="px-3 text-[10px] font-black text-slate-500 uppercase border-r border-slate-700"><i class="fa-solid fa-circle-exclamation mr-1"></i> Risk</span>
+                    <span class="px-3 text-[10px] font-black text-slate-500 uppercase border-r border-slate-700"><i class="fa-solid fa-circle-exclamation mr-1"></i> Nessus Risk</span>
                     <select name="severity" onchange="this.form.submit()" class="bg-slate-900 text-white text-xs p-2.5 focus:outline-none cursor-pointer">
                         <option value="All" class="bg-slate-900">All Severities</option>
                         <option value="Critical" {% if current_severity == 'Critical' %}selected{% endif %} class="bg-slate-900">Critical</option>
                         <option value="High" {% if current_severity == 'High' %}selected{% endif %} class="bg-slate-900">High</option>
                         <option value="Medium" {% if current_severity == 'Medium' %}selected{% endif %} class="bg-slate-900">Medium</option>
                         <option value="Low" {% if current_severity == 'Low' %}selected{% endif %} class="bg-slate-900">Low</option>
+                    </select>
+                </div>
+
+                <!-- Org Risk Filter -->
+                <div class="flex items-center bg-slate-900 border border-slate-700 rounded-xl overflow-hidden">
+                    <span class="px-3 text-[10px] font-black text-slate-500 uppercase border-r border-slate-700"><i class="fa-solid fa-shield-halved mr-1"></i> Org Risk</span>
+                    <select name="org_risk" onchange="this.form.submit()" class="bg-slate-900 text-white text-xs p-2.5 focus:outline-none cursor-pointer">
+                        <option value="All" class="bg-slate-900">All Org Risks</option>
+                        <option value="Critical" {% if current_org_risk == 'Critical' %}selected{% endif %} class="bg-slate-900">Critical</option>
+                        <option value="High" {% if current_org_risk == 'High' %}selected{% endif %} class="bg-slate-900">High</option>
+                        <option value="Medium" {% if current_org_risk == 'Medium' %}selected{% endif %} class="bg-slate-900">Medium</option>
+                        <option value="Low" {% if current_org_risk == 'Low' %}selected{% endif %} class="bg-slate-900">Low</option>
+                        <option value="PENDING_AI" {% if current_org_risk == 'PENDING_AI' %}selected{% endif %} class="bg-slate-900">Pending AI</option>
                     </select>
                 </div>
 
@@ -270,7 +283,7 @@
             </div>
             <div class="flex space-x-2">
                 {% if page > 1 %}
-                <a href="/vulnerabilities?scan_id={{ current_scan_id }}&page={{ page - 1 }}&q={{ current_q }}&asset={{ current_asset }}&severity={{ current_severity }}" class="px-4 py-2 bg-slate-800 hover:bg-blue-600 text-white font-bold text-xs uppercase rounded-lg transition shadow">
+                <a href="/vulnerabilities?scan_id={{ current_scan_id }}&page={{ page - 1 }}&q={{ current_q }}&asset={{ current_asset }}&severity={{ current_severity }}&org_risk={{ current_org_risk }}" class="px-4 py-2 bg-slate-800 hover:bg-blue-600 text-white font-bold text-xs uppercase rounded-lg transition shadow">
                     <i class="fa-solid fa-arrow-left mr-2"></i> Previous
                 </a>
                 {% else %}
@@ -280,7 +293,7 @@
                 {% endif %}
 
                 {% if page < total_pages %}
-                <a href="/vulnerabilities?scan_id={{ current_scan_id }}&page={{ page + 1 }}&q={{ current_q }}&asset={{ current_asset }}&severity={{ current_severity }}" class="px-4 py-2 bg-slate-800 hover:bg-blue-600 text-white font-bold text-xs uppercase rounded-lg transition shadow">
+                <a href="/vulnerabilities?scan_id={{ current_scan_id }}&page={{ page + 1 }}&q={{ current_q }}&asset={{ current_asset }}&severity={{ current_severity }}&org_risk={{ current_org_risk }}" class="px-4 py-2 bg-slate-800 hover:bg-blue-600 text-white font-bold text-xs uppercase rounded-lg transition shadow">
                     Next <i class="fa-solid fa-arrow-right ml-2"></i>
                 </a>
                 {% else %}

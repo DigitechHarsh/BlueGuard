@@ -197,6 +197,8 @@ def vulnerabilities():
     scan_id = request.args.get("scan_id")
     asset_filter = request.args.get("asset", "All")
     sev_filter = request.args.get("severity", "All")
+    org_risk_filter = request.args.get("org_risk", "All")
+    q_filter = request.args.get("q", "")
     page = int(request.args.get("page", 1))
     limit = 15
 
@@ -219,6 +221,15 @@ def vulnerabilities():
         query["asset_name"] = asset_filter
     if sev_filter != "All":
         query["nessus_severity"] = {"$regex": sev_filter, "$options": "i"}
+    if org_risk_filter != "All":
+        query["org_risk"] = org_risk_filter
+    if q_filter:
+        query["$or"] = [
+            {"vuln_name": {"$regex": q_filter, "$options": "i"}},
+            {"cve_id": {"$regex": q_filter, "$options": "i"}},
+            {"description": {"$regex": q_filter, "$options": "i"}},
+            {"synopsis": {"$regex": q_filter, "$options": "i"}}
+        ]
     
     total_count = db.vulnerabilities.count_documents(query)
     vulns = list(db.vulnerabilities.find(query).sort("nessus_severity", -1).skip((page - 1) * limit).limit(limit))
@@ -283,6 +294,8 @@ def vulnerabilities():
                            available_assets=available_assets,
                            current_asset=asset_filter,
                            current_severity=sev_filter,
+                           current_org_risk=org_risk_filter,
+                           current_q=q_filter,
                            current_scan_id=scan_id,
                            scan_name=scan_meta.get("name", "Unknown Scan") if scan_meta else "Unknown Scan",
                            page=page,
@@ -937,12 +950,15 @@ def export_csv():
 def export_scan_csv(scan_id):
     asset_filter = request.args.get("asset", "All")
     sev_filter = request.args.get("severity", "All")
+    org_risk_filter = request.args.get("org_risk", "All")
     
     query = {"scan_id": scan_id}
     if asset_filter != "All":
         query["asset_name"] = asset_filter
     if sev_filter != "All":
         query["nessus_severity"] = {"$regex": sev_filter, "$options": "i"}
+    if org_risk_filter != "All":
+        query["org_risk"] = org_risk_filter
 
     vulns = list(db.vulnerabilities.find(query).sort("nessus_severity", -1))
     scan_meta = db.nessus_scans.find_one({"scan_id": scan_id})
