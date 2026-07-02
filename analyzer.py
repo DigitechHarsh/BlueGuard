@@ -601,15 +601,14 @@ Description: {vuln_context}
 4. End users do not have administrative/root privileges, and data exfiltration outside the internal network is restricted.
 
 === YOUR TASK ===
-Provide a detailed assessment covering:
-- Real-world exploitability (beyond CVSS score; consider practical attack feasibility).
-- Possible attack paths within the given environment.
-- Potential business impact if exploited.
+Provide a concise, high-impact assessment covering:
+- Real-world exploitability (considering practical internal attack feasibility).
+- Potential business impact (operational/financial loss).
 - Likelihood of false positives.
 - Recommended remediation priority (with justification).
 
 === OUTPUT FORMAT ===
-You MUST return ONLY a JSON object with this exact structure (no markdown fences, no conversational text outside the JSON):
+You MUST return ONLY a JSON object with this exact structure (no markdown fences, no conversational text outside the JSON). Keep all text fields short and high-impact.
 {{
     "org_risk": "Critical|High|Medium|Low",
     "cia_matrix": {{
@@ -618,14 +617,14 @@ You MUST return ONLY a JSON object with this exact structure (no markdown fences
         "availability": "0-10"
     }},
     "business_impact": [
-        "Business impact detailing financial or operational loss..."
+        "Short business impact (MAX 2 items, e.g. 'Operational downtime.', 'Lateral movement to databases.')"
     ],
-    "control_context": "Real-world exploitability and attack paths considering internal network, Palo Alto firewalls, and EDR controls.",
+    "control_context": "Concise review of internal network, firewall, and EDR controls. (MAX 2-3 sentences).",
     "remediation_steps": [
         "Remediation step...",
-        "Remediation justification with priority details..."
+        "Justification..."
     ],
-    "summary": "Brief summary of practical attack feasibility, asset criticality, and likelihood of false positives."
+    "summary": "Short summary of attack feasibility and false positive likelihood (MAX 2 sentences)."
 }}
 """
 
@@ -750,15 +749,14 @@ You are a cybersecurity analyst. Analyze the following list of Nessus vulnerabil
 4. End users do not have administrative/root privileges, and data exfiltration outside the internal network is restricted.
 
 === YOUR TASK ===
-For each vulnerability listed above, provide a detailed assessment covering:
-- Real-world exploitability (beyond CVSS score; consider practical attack feasibility).
-- Possible attack paths within the given environment.
-- Potential business impact if exploited.
+For each vulnerability listed above, provide a concise, high-impact assessment covering:
+- Real-world exploitability (considering practical internal attack feasibility).
+- Potential business impact (operational/financial loss).
 - Likelihood of false positives.
 - Recommended remediation priority (with justification).
 
 === OUTPUT FORMAT ===
-You MUST return ONLY a JSON object containing a 'results' key with a list of assessment results in the exact same order as the inputs. No conversational text outside of the JSON.
+You MUST return ONLY a JSON object containing a 'results' key with a list of assessment results in the exact same order as the inputs. No conversational text outside of the JSON. Keep all text fields short and high-impact.
 CRITICAL: Every string value in the JSON MUST be properly escaped. Do not use unescaped double quotes inside text fields (use single quotes instead).
 {{
     "results": [
@@ -771,14 +769,14 @@ CRITICAL: Every string value in the JSON MUST be properly escaped. Do not use un
                 "availability": "0-10"
             }},
             "business_impact": [
-                "Business impact string..."
+                "Short business impact (MAX 2 items, e.g. 'Operational downtime.', 'Lateral movement to databases.')"
             ],
-            "control_context": "Real-world exploitability and attack paths considering internal network, Palo Alto firewalls, and EDR controls.",
+            "control_context": "Concise review of internal network, firewall, and EDR controls. (MAX 2-3 sentences).",
             "remediation_steps": [
                 "Remediation step...",
-                "Remediation justification with priority details..."
+                "Justification..."
             ],
-            "summary": "Detailed summary covering attack feasibility and likelihood of false positives."
+            "summary": "Short summary of attack feasibility and false positive likelihood (MAX 2 sentences)."
         }}
     ]
 }}
