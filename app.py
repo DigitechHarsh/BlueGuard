@@ -380,8 +380,8 @@ def process_scan_background(scan_id):
         print(f"[AI-THREAD] All vulnerabilities resolved from cache! Completed processing for scan_id: {scan_id}")
         return
         
-    # Step 3: Run remaining signatures in batches of 5
-    batch_size = 5
+    # Step 3: Run remaining signatures in batches of 3
+    batch_size = 3
     for offset in range(0, len(to_analyze), batch_size):
         batch_slice = to_analyze[offset:offset+batch_size]
         batch_samples = [mv[0] for _, mv in batch_slice]

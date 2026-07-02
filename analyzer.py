@@ -759,6 +759,7 @@ For each vulnerability listed above, provide a detailed assessment covering:
 
 === OUTPUT FORMAT ===
 You MUST return ONLY a JSON object containing a 'results' key with a list of assessment results in the exact same order as the inputs. No conversational text outside of the JSON.
+CRITICAL: Every string value in the JSON MUST be properly escaped. Do not use unescaped double quotes inside text fields (use single quotes instead).
 {{
     "results": [
         {{
@@ -797,7 +798,7 @@ You MUST return ONLY a JSON object containing a 'results' key with a list of ass
                         model=model,
                         messages=[{"role": "user", "content": prompt}],
                         temperature=0.1,
-                        max_tokens=2000,
+                        max_tokens=3000,
                         response_format={ "type": "json_object" },
                         timeout=5.0
                     )
@@ -810,7 +811,7 @@ You MUST return ONLY a JSON object containing a 'results' key with a list of ass
                     model=model,
                     messages=[{"role": "user", "content": prompt}],
                     temperature=0.1,
-                    max_tokens=2000,
+                    max_tokens=3000,
                     timeout=8.0
                 )
                 
